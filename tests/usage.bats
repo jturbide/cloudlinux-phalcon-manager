@@ -206,7 +206,7 @@ EOF
 }
 
 @test "usage accepts a bounded parallel job limit" {
-  run "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --jobs 2 --user alice
+  run "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --all-php --jobs 2 --user alice
   [ "$status" -eq 0 ]
 
   [[ "$output" == *"jobs: 2"* ]]
@@ -228,9 +228,18 @@ EOF
   [[ "$output" =~ SELECTOR_USE[[:space:]]+OFFICIAL[[:space:]]+php85[[:space:]]+phalcon5\.so[[:space:]]+bob ]]
 }
 
-@test "usage scans all php slots by default when selector current is stale" {
+@test "usage defaults to selected selector php version" {
   run env CLP_TEST_SELECTOR_CURRENT_PHP82=1 CLP_TEST_SELECTOR_STALE_PHP82=1 \
     "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --user alice
+  [ "$status" -eq 0 ]
+
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+OFFICIAL[[:space:]]+php82[[:space:]]+phalcon5\.so[[:space:]]+alice ]]
+  [[ "$output" != *"phalcon516.so"* ]]
+}
+
+@test "usage scans all php slots when requested" {
+  run env CLP_TEST_SELECTOR_CURRENT_PHP82=1 CLP_TEST_SELECTOR_STALE_PHP82=1 \
+    "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --all-php --user alice
   [ "$status" -eq 0 ]
 
   [[ "$output" =~ SELECTOR_USE[[:space:]]+OFFICIAL[[:space:]]+php82[[:space:]]+phalcon5\.so[[:space:]]+alice ]]

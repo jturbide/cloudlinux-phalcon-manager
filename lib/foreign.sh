@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 declare -A CLP_FOREIGN_MANAGED_MODULES=()
 declare -A CLP_FOREIGN_MANAGED_INIS=()
+declare -A CLP_FOREIGN_OFFICIAL_MODULES=()
 
 clp_foreign_load_managed_maps() {
     CLP_FOREIGN_MANAGED_MODULES=()
@@ -26,12 +27,43 @@ clp_foreign_load_managed_maps() {
     done < <(jq -c '.installs[]?' "${CLP_METADATA_FILE}")
 }
 
+clp_foreign_load_official_modules() {
+    CLP_FOREIGN_OFFICIAL_MODULES=()
+
+    command -v rpm >/dev/null 2>&1 || return 0
+
+    local line name rest slot module
+    while IFS= read -r line; do
+        name="${line%%$'\t'*}"
+        [[ -n "${name}" ]] || continue
+        slot=""
+        module=""
+
+        case "${name}" in
+            alt-php[0-9][0-9]-phalcon*)
+                rest="${name#alt-}"
+                slot="${rest%%-*}"
+                module="${rest#${slot}-}.so"
+                ;;
+            ea-php[0-9][0-9]-php-phalcon*)
+                slot="${name%%-php-phalcon*}"
+                module="${name#${slot}-php-}.so"
+                ;;
+        esac
+
+        [[ -n "${slot}" && -n "${module}" ]] || continue
+        CLP_FOREIGN_OFFICIAL_MODULES["${slot}|${module}"]=1
+    done < <(rpm -qa --qf '%{NAME}\n' 2>/dev/null | awk '/^(alt|ea)-php.*phalcon/ { print }' | sort || true)
+}
+
 clp_foreign_module_status() {
     local slot="$1"
     local module="$2"
 
     if [[ -n "${CLP_FOREIGN_MANAGED_MODULES["${slot}|${module}"]+set}" ]]; then
         printf 'MANAGED\n'
+    elif [[ -n "${CLP_FOREIGN_OFFICIAL_MODULES["${slot}|${module}"]+set}" ]]; then
+        printf 'OFFICIAL\n'
     else
         printf 'FOREIGN\n'
     fi
@@ -70,6 +102,14 @@ clp_foreign_ini_status() {
         [[ -n "${module}" ]] || continue
         if [[ -n "${CLP_FOREIGN_MANAGED_MODULES["${slot}|${module}"]+set}" ]]; then
             printf 'MANAGED\n'
+            return 0
+        fi
+    done < <(clp_foreign_ini_phalcon_modules "${ini_path}" | awk 'NF && !seen[$0]++')
+
+    while IFS= read -r module; do
+        [[ -n "${module}" ]] || continue
+        if [[ -n "${CLP_FOREIGN_OFFICIAL_MODULES["${slot}|${module}"]+set}" ]]; then
+            printf 'OFFICIAL\n'
             return 0
         fi
     done < <(clp_foreign_ini_phalcon_modules "${ini_path}" | awk 'NF && !seen[$0]++')
@@ -215,6 +255,7 @@ clp_cmd_foreign() {
     fi
 
     clp_foreign_load_managed_maps
+    clp_foreign_load_official_modules
 
     printf 'cl-phalcon foreign inventory\n'
     printf 'root: %s\n' "${CLP_ROOT:-/}"

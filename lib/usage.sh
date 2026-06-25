@@ -822,7 +822,7 @@ clp_cmd_usage() {
         while IFS= read -r slot; do
             [[ -n "${slot}" ]] && slots+=("${slot}")
         done < <(clp_split_csv_to_lines "${php_filter}")
-    elif [[ "${all_php}" == "1" || "${current_only}" != "1" ]]; then
+    elif [[ "${all_php}" == "1" ]]; then
         while IFS= read -r slot; do
             [[ -n "${slot}" ]] && slots+=("${slot}")
         done < <(clp_detect_slot_names)
@@ -835,11 +835,11 @@ clp_cmd_usage() {
     printf 'cl-phalcon selector usage\n'
     printf 'root: %s\n' "${CLP_ROOT:-/}"
     printf 'users: %s\n' "${#users[@]}"
-    if [[ -n "${php_filter}" || "${all_php}" == "1" || "${current_only}" != "1" ]]; then
+    if [[ -n "${php_filter}" || "${all_php}" == "1" ]]; then
         printf 'slots: %s\n' "$(clp_join_by ', ' "${slots[@]}")"
         printf 'jobs: %s\n' "${usage_jobs}"
     else
-        printf 'slots: current PHP Selector version per user\n'
+        printf 'slots: selected PHP Selector version per user\n'
     fi
     printf '\n%-14s %-8s %-8s %-14s %-16s %s\n' \
         "TYPE" "STATUS" "SLOT" "MODULE" "USER" "DOMAINS"

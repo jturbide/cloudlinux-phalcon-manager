@@ -48,7 +48,7 @@ Commands:
   list
   doctor
   foreign [--php php85] [--include-internal]
-  usage [--php php85] [--module phalcon516] [--user account] [--current-only] [--jobs 8]
+  usage [--all-php] [--php php85] [--module phalcon516] [--user account] [--current-only] [--jobs 8]
   detect [--include-internal]
   install --php php85 --phalcon 5.14.2 [--module phalcon514]
   install --php php82,php83 --phalcon 5.9.3

@@ -75,7 +75,7 @@ EOF
 
   [[ "$output" =~ RPM_PACKAGE[[:space:]]+OFFICIAL[[:space:]]+php85[[:space:]]+phalcon5[[:space:]]+5\.14\.0-1\.el8\.x86_64[[:space:]]+alt-php85-phalcon5-5\.14\.0-1\.el8\.x86_64 ]]
   [[ "$output" == *"MODULE_FILE  MANAGED  php85    phalcon516.so"* ]]
-  [[ "$output" == *"MODULE_FILE  FOREIGN  php85    phalcon5.so"* ]]
+  [[ "$output" == *"MODULE_FILE  OFFICIAL php85    phalcon5.so"* ]]
   [[ "$output" == *"INI_FILE     MANAGED  php85    phalcon516.ini"* ]]
-  [[ "$output" == *"INI_FILE     FOREIGN  php85    phalcon5.ini"* ]]
+  [[ "$output" == *"INI_FILE     OFFICIAL php85    phalcon5.ini"* ]]
 }

@@ -255,6 +255,7 @@ belong to those accounts.
 
 ```bash
 cl-phalcon usage
+cl-phalcon usage --all-php
 cl-phalcon usage --php php85
 cl-phalcon usage --php php85 --module phalcon516
 cl-phalcon usage --user accountname
@@ -262,22 +263,21 @@ cl-phalcon usage --jobs 12
 cl-phalcon usage --current-only
 ```
 
-By default, `usage` uses `selectorctl --list-users` for the account list. It
-scans all detected selector-style `phpNN` versions instead of trusting
-`selectorctl --current`, because cPanel/CloudLinux servers can retain stale
-per-account Selector state for older PHP versions. It tries CloudLinux's bulk
-selector report first with `selectorctl --list-user-extensions`; if that host
-returns no usable bulk output, it automatically falls back to per-account probes
-such as `selectorctl --list-user-extensions --user=account --version=8.5`. Use
-`--php php85` to audit a specific alt-php slot, `--module phalcon516` to narrow
-the report to one selector module, or `--current-only` when you intentionally
-want the faster legacy report for each user's current Selector version only.
-`--current-only` uses `selectorctl --user-current` first and falls back to the
-selected row from `selectorctl --user-summary` when needed.
+By default, `usage` uses `selectorctl --list-users` for the account list and
+checks each user's selected PHP Selector version. This is the fast operational
+report for currently selected account PHP versions. It uses
+`selectorctl --user-current` first and falls back to the selected row from
+`selectorctl --user-summary` when needed.
 
-When the command has to fall back to per-account probes, it runs them in
-parallel. The default is `--jobs 8`; raise it carefully on large servers, for
-example `--jobs 12`, if `selectorctl` and the server are handling the load well.
+Use `--php php85` to audit a specific alt-php slot, `--module phalcon516` to
+narrow the report to one selector module, or `--all-php` when you intentionally
+want the slower exhaustive audit across all detected selector-style `phpNN`
+versions, including old/stale selections.
+
+When `--all-php` or a broad `--php` list has to run many per-account probes, it
+runs them in parallel. The default is `--jobs 8`; raise it carefully on large
+servers, for example `--jobs 12`, if `selectorctl` and the server are handling
+the load well.
 
 `--probe-users` is only for older CloudLinux selectors where
 `--list-user-extensions --user=...` is not available. It uses the older
