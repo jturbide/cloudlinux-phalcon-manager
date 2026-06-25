@@ -16,21 +16,21 @@ if [[ -z "${CLP_LIB_DIR}" ]]; then
     fi
 fi
 
-# shellcheck source=../lib/common.sh
+# shellcheck source=lib/common.sh
 source "${CLP_LIB_DIR}/common.sh"
-# shellcheck source=../lib/metadata.sh
+# shellcheck source=lib/metadata.sh
 source "${CLP_LIB_DIR}/metadata.sh"
-# shellcheck source=../lib/detect.sh
+# shellcheck source=lib/detect.sh
 source "${CLP_LIB_DIR}/detect.sh"
-# shellcheck source=../lib/build.sh
+# shellcheck source=lib/build.sh
 source "${CLP_LIB_DIR}/build.sh"
-# shellcheck source=../lib/conflicts.sh
+# shellcheck source=lib/conflicts.sh
 source "${CLP_LIB_DIR}/conflicts.sh"
-# shellcheck source=../lib/validate.sh
+# shellcheck source=lib/validate.sh
 source "${CLP_LIB_DIR}/validate.sh"
-# shellcheck source=../lib/doctor.sh
+# shellcheck source=lib/doctor.sh
 source "${CLP_LIB_DIR}/doctor.sh"
-# shellcheck source=../lib/install.sh
+# shellcheck source=lib/install.sh
 source "${CLP_LIB_DIR}/install.sh"
 
 clp_usage() {
