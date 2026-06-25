@@ -11,11 +11,17 @@ extension conflicts in sync, and rebuilding CageFS alt-php ini state.
 
 ## Status
 
-This is an MVP. The first supported workflow covers:
+`cl-phalcon` is stable for production use on CloudLinux cPanel servers where
+Phalcon extensions are managed through alt-php, PHP Selector, and CageFS.
+
+The supported workflow covers:
 
 - `detect`
 - `install --php phpXX --phalcon VERSION`
 - `update`
+- `upgrade`
+- `foreign`
+- `usage`
 - metadata storage
 - ini generation
 - validation

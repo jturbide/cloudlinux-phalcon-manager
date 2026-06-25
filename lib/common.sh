@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-CLP_TOOL_VERSION="${CLP_TOOL_VERSION:-0.2.0}"
+CLP_TOOL_VERSION="${CLP_TOOL_VERSION:-1.0.0}"
 CLP_GITHUB_REPO="${CLP_GITHUB_REPO:-https://github.com/phalcon/cphalcon.git}"
 CLP_DEFAULT_CFLAGS="${CLP_DEFAULT_CFLAGS:--march=native -O2 -fomit-frame-pointer}"
 
