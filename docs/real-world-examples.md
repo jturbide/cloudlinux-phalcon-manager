@@ -22,15 +22,18 @@ This writes:
 /opt/alt/php85/etc/php.d.all/phalcon516.ini
 ```
 
-## Install the Same Phalcon Version for Several PHP Versions
+## Install the Pinned Phalcon 5.9.3 Compatibility Module
 
 ```bash
-cl-phalcon install --php php82,php83,php84,php85 --phalcon 5.14.2 --yes
+cl-phalcon install --php php81,php82,php83,php84 --phalcon 5.9.3 --module phalcon59 --yes
 cl-phalcon validate
 ```
 
 Each alt-php slot gets its own compiled module. The tool never copies a module
 from one PHP slot to another.
+
+Use this when older projects are aligned with Phalcon 5.9.3 and CloudLinux's
+official `phalcon5` package has moved to a newer framework behavior.
 
 ## Legacy Phalcon 4 Application
 

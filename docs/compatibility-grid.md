@@ -13,13 +13,53 @@ need Phalcon 3 or 4 while newer applications should use Phalcon 5.
 | --- | --- | --- | --- |
 | `php72` | PHP 7.2 | `phalcon3`, `phalcon4` | Use Phalcon `v3.4.5` for legacy apps. Use Phalcon 4 from `4.1.x`. |
 | `php73` | PHP 7.3 | `phalcon3`, `phalcon4` | Same as PHP 7.2. |
-| `php74` | PHP 7.4 | `phalcon4`, `phalcon59` | Phalcon 4 from `4.1.x`; Phalcon 5.9.3 for apps ready for Phalcon 5. |
+| `php74` | PHP 7.4 | `phalcon4`, `phalcon59` | Phalcon 4 from `4.1.x`; Phalcon 5.9.3 for older Phalcon 5 apps pinned before later framework changes. |
 | `php80` | PHP 8.0 | `phalcon4`, `phalcon59` | Transition slot. Phalcon 4 must come from `4.2.x`; earlier PHP slots use `4.1.x`. |
-| `php81` | PHP 8.1 | `phalcon59` | Do not recommend Phalcon below 5 after PHP 8.0. |
-| `php82` | PHP 8.2 | `phalcon59` | Recommended Phalcon 5 baseline. |
-| `php83` | PHP 8.3 | `phalcon59` | Recommended Phalcon 5 baseline. |
-| `php84` | PHP 8.4 | `phalcon59` | Recommended Phalcon 5 baseline. |
+| `php81` | PHP 8.1 | `phalcon59` | Compatibility pin for older Phalcon 5 projects. |
+| `php82` | PHP 8.2 | `phalcon59` | Compatibility pin for older Phalcon 5 projects. |
+| `php83` | PHP 8.3 | `phalcon59` | Compatibility pin for older Phalcon 5 projects. |
+| `php84` | PHP 8.4 | `phalcon59` | Compatibility pin for older Phalcon 5 projects. |
 | `php85` | PHP 8.5 | `phalcon516` or newer | Jump straight to Phalcon 5.16.0 or a newer vetted 5.16+ release. |
+
+## Official CloudLinux Packages First
+
+CloudLinux ships official Phalcon packages for many older combinations, for
+example `alt-php72-phalcon3`, `alt-php72-phalcon4`, `alt-php73-phalcon3`,
+`alt-php73-phalcon4`, `alt-php74-phalcon4`, and `alt-php74` through
+`alt-php85` Phalcon 5 packages.
+
+Use the official RPM when it satisfies the application. Use `cl-phalcon` when:
+
+- CloudLinux does not package the needed combination, such as Phalcon 4 for
+  PHP 8.0 transition installs.
+- CloudLinux packages Phalcon 5 but the packaged version is not the application
+  target. It may lag behind a newer target such as 5.16.0+, or it may have
+  moved past the older 5.9.3 compatibility target.
+- You need versioned selector modules beside the official selector option for a
+  controlled migration.
+
+Check the official package version before compiling a custom module:
+
+```bash
+dnf info alt-php85-phalcon5
+rpm -qa | sort | grep -E '^alt-php[0-9]+-phalcon'
+```
+
+The custom modules still conflict with the official selector name `phalcon`, so
+users cannot enable the official package and a custom Phalcon build at the same
+time.
+
+## Why Phalcon 5.9.3 Is Pinned
+
+Phalcon 5.9.3 is intentional for many older projects. After that line, Phalcon
+started changing framework behavior more aggressively, and applications aligned
+with 5.9.3 may not be ready for a newer `phalcon5` RPM.
+
+CloudLinux can provide an official `alt-phpXX-phalcon5` package and still not
+be the right choice for those applications if the packaged version has moved
+above 5.9.3. In that case, install `phalcon59` as a separate versioned selector
+module, keep the official package available, and let PHP Selector conflicts
+prevent both from being enabled at once.
 
 ## Why PHP 8.0 Is Special
 
@@ -52,14 +92,17 @@ examples/install-php85.sh
 Legacy PHP 7.2 and 7.3 apps:
 
 ```bash
-cl-phalcon install --php php72,php73 --phalcon 3.4.5 --git-ref v3.4.5 --module phalcon3 --yes
-cl-phalcon install --php php72,php73 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
+# Prefer official alt-php72/73 Phalcon 3 and 4 packages when acceptable.
+# Uncomment only when a custom upstream build is required.
+# cl-phalcon install --php php72,php73 --phalcon 3.4.5 --git-ref v3.4.5 --module phalcon3 --yes
+# cl-phalcon install --php php72,php73 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
 ```
 
 PHP 7.4:
 
 ```bash
-cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
+# Prefer official alt-php74-phalcon4 when acceptable.
+# cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
 cl-phalcon install --php php74 --phalcon 5.9.3 --module phalcon59 --yes
 ```
 

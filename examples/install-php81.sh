@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# PHP 8.1 should use Phalcon 5.9.3 in this compatibility grid.
+# PHP 8.1 uses Phalcon 5.9.3 here as a compatibility pin for older projects.
 
 cl-phalcon install \
   --php php81 \

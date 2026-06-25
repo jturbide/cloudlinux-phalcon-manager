@@ -22,10 +22,12 @@ jobs:
           sudo apt-get install -y bats jq shellcheck
 
       - name: Bash syntax
-        run: bash -n bin/cl-phalcon lib/*.sh
+        run: bash -n bin/cl-phalcon lib/*.sh tests/*.bats examples/*.sh
 
       - name: ShellCheck
-        run: shellcheck bin/cl-phalcon lib/*.sh tests/*.bats examples/*.sh
+        run: |
+          shellcheck -x bin/cl-phalcon
+          shellcheck tests/*.bats examples/*.sh
 
       - name: Bats
         run: bats tests

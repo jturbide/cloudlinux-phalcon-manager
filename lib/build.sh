@@ -82,7 +82,7 @@ clp_build_phalcon_module() {
     local php_slot="$2"
     local phpize="$3"
     local php_config="$4"
-    local extension_dir="$5"
+    local _extension_dir="$5"
     local module_base="$6"
     local cflags="$7"
 

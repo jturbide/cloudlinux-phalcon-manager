@@ -2,6 +2,8 @@
 set -Eeuo pipefail
 
 # PHP 7.2 usually needs legacy Phalcon 3 and Phalcon 4 from the 4.1.x branch.
+# CloudLinux provides official alt-php72 Phalcon 3/4 RPMs. Run this custom
+# build example only when the official package is not acceptable for the host.
 
 cl-phalcon install \
   --php php72 \

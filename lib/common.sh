@@ -159,7 +159,8 @@ clp_backup_file() {
 
     [[ -e "${path}" ]] || return 0
 
-    local backup="${path}.bak.$(clp_backup_suffix)"
+    local backup
+    backup="${path}.bak.$(clp_backup_suffix)"
     clp_info "Creating backup: ${backup}"
     clp_run cp -p "${path}" "${backup}"
 }

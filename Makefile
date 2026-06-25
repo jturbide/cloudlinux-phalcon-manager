@@ -6,7 +6,8 @@ syntax:
 	bash -n bin/cl-phalcon lib/*.sh tests/*.bats examples/*.sh
 
 lint:
-	shellcheck bin/cl-phalcon lib/*.sh tests/*.bats examples/*.sh
+	shellcheck -x bin/cl-phalcon
+	shellcheck tests/*.bats examples/*.sh
 
 test:
 	bats tests

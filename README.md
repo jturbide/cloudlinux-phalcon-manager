@@ -113,12 +113,15 @@ cl-phalcon install --php php85 --phalcon 5.16.0 --yes
 cl-phalcon validate --php php85 --module phalcon516
 ```
 
-Install Phalcon 5.14 for several application PHP versions:
+Install the pinned Phalcon 5.9.3 compatibility module for older projects:
 
 ```bash
-cl-phalcon install --php php82,php83,php84,php85 --phalcon 5.14.2 --yes
+cl-phalcon install --php php81,php82,php83,php84 --phalcon 5.9.3 --module phalcon59 --yes
 cl-phalcon validate
 ```
+
+This is useful when CloudLinux's official `phalcon5` package has moved past
+5.9.3 but older projects are still aligned with that framework behavior.
 
 Install an older Phalcon 4 build for a legacy PHP 7.4 application:
 
@@ -219,10 +222,11 @@ Install with an explicit module name:
 cl-phalcon install --php php85 --phalcon 5.14.2 --module phalcon514 --yes
 ```
 
-Install one Phalcon version for multiple alt-php slots:
+Install the pinned Phalcon 5.9.3 compatibility module for multiple alt-php
+slots:
 
 ```bash
-cl-phalcon install --php php82,php83,php84 --phalcon 5.9.3 --yes
+cl-phalcon install --php php82,php83,php84 --phalcon 5.9.3 --module phalcon59 --yes
 ```
 
 Install for every detected alt-php slot:
@@ -382,10 +386,23 @@ phalcon514 phalcon515 phalcon516
 Any module installed by the tool is added to the managed conflict set.
 
 CloudLinux also ships official Phalcon packages, commonly exposed through PHP
-Selector as `phalcon`. Those packages are useful but may lag behind upstream
-Phalcon releases. `cl-phalcon` does not overwrite the official `phalcon.so` by
-default; custom builds use versioned module names such as `phalcon514.so` and
-`phalcon516.so`.
+Selector as `phalcon`. Those packages are useful, but their version may be too
+old or too new for a specific application target. `cl-phalcon` does not
+overwrite the official `phalcon.so` by default; custom builds use versioned
+module names such as `phalcon514.so` and `phalcon516.so`.
+
+Prefer the official CloudLinux RPM when it already satisfies the application.
+Use `cl-phalcon` for missing combinations, pinned compatibility versions,
+newer upstream versions, or controlled migrations that need a separate
+versioned selector module.
+
+Check package availability and version before compiling:
+
+```bash
+dnf search phalcon
+dnf info alt-php85-phalcon5
+rpm -qa | sort | grep -E '^alt-php[0-9]+-phalcon'
+```
 
 The managed conflicts block always includes the official selector name
 `phalcon`, plus the versioned names managed by this tool. That prevents an
