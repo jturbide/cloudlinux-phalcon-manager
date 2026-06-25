@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.1 - 2026-06-25
+
+### Fixed
+
+- Mark CloudLinux RPM-owned Phalcon module and INI files as `OFFICIAL` in the
+  foreign inventory instead of reporting them as unmanaged foreign files.
+- Make `usage` default to each account's current PHP Selector version, using
+  `selectorctl --user-current` with a selected-row summary fallback.
+- Keep `usage --all-php` available for slower exhaustive audits across every
+  detected selector PHP slot.
+- Add parallel selector probes via `--jobs` for broad usage scans.
+
 ## 1.0.0 - 2026-06-25
 
 First stable release of `cloudlinux-phalcon-manager`.
