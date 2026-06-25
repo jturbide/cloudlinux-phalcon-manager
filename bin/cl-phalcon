@@ -30,6 +30,8 @@ source "${CLP_LIB_DIR}/conflicts.sh"
 source "${CLP_LIB_DIR}/validate.sh"
 # shellcheck source=lib/doctor.sh
 source "${CLP_LIB_DIR}/doctor.sh"
+# shellcheck source=lib/foreign.sh
+source "${CLP_LIB_DIR}/foreign.sh"
 # shellcheck source=lib/install.sh
 source "${CLP_LIB_DIR}/install.sh"
 
@@ -43,6 +45,7 @@ Usage:
 Commands:
   list
   doctor
+  foreign [--php php85] [--include-internal]
   detect [--include-internal]
   install --php php85 --phalcon 5.14.2 [--module phalcon514]
   install --php php82,php83 --phalcon 5.9.3
@@ -114,6 +117,10 @@ case "${command_name}" in
         ;;
     doctor)
         clp_cmd_doctor "$@"
+        ;;
+    foreign)
+        clp_require_root
+        clp_cmd_foreign "$@"
         ;;
     detect)
         clp_require_root

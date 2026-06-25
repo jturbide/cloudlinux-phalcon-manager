@@ -170,6 +170,9 @@ cl-phalcon list
 # Run environment checks before installing or troubleshooting modules.
 cl-phalcon doctor
 
+# Inventory official RPMs, unmanaged Phalcon files, and managed modules.
+cl-phalcon foreign
+
 # Detect CloudLinux alt-php slots and their PHP ABI/build metadata.
 cl-phalcon detect
 
@@ -210,6 +213,30 @@ Global options:
 cl-phalcon --dry-run ...
 cl-phalcon --yes ...
 ```
+
+## Foreign Inventory
+
+Use `foreign` when you want to see which Phalcon artifacts are managed by
+`cl-phalcon` and which ones came from CloudLinux packages or previous manual
+installs.
+
+```bash
+cl-phalcon foreign
+cl-phalcon foreign --php php85
+```
+
+The command is read-only. It reports:
+
+- `RPM_PACKAGE OFFICIAL` for installed `alt-php*phalcon*` or
+  `ea-php*phalcon*` RPM packages, including parsed slot, module line, and RPM
+  version. These are CloudLinux/cPanel packages, not modules managed by this
+  tool.
+- `MODULE_FILE MANAGED` for `.so` files recorded in metadata.
+- `MODULE_FILE FOREIGN` for Phalcon `.so` files found in alt-php extension
+  directories but not recorded in metadata.
+- `INI_FILE MANAGED` for selector ini files recorded in metadata or loading a
+  managed module.
+- `INI_FILE FOREIGN` for Phalcon selector ini files not tracked by metadata.
 
 ## Real-world Workflows
 
