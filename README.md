@@ -72,12 +72,33 @@ CloudLinux release, but they are commonly shaped like:
 dnf install -y alt-php85-devel
 ```
 
-Clone the project. Replace `OWNER` with the GitHub user or organization that
-hosts the public repository:
+Install only the development packages for PHP slots you plan to compile. Avoid
+broad globs such as `alt-php8*-devel` unless you intentionally want development
+headers for every PHP 8 alt-php slot on that server.
+
+Examples:
+
+```bash
+dnf install -y alt-php85-devel
+dnf install -y alt-php74-devel alt-php80-devel alt-php81-devel alt-php82-devel alt-php83-devel alt-php84-devel alt-php85-devel
+```
+
+If you installed extra `alt-phpXX-devel` packages by accident, it is usually
+safe to leave them installed; they provide build headers and tools such as
+`phpize` and `php-config`. They do not enable Phalcon by themselves. If you want
+to remove extras, review the transaction before confirming and remove only
+development packages for slots you will not build:
+
+```bash
+rpm -qa 'alt-php*-devel' | sort
+dnf remove alt-php80-devel
+```
+
+Clone the project:
 
 ```bash
 cd /usr/local/src
-git clone https://github.com/OWNER/cloudlinux-phalcon-manager.git
+git clone https://github.com/jturbide/cloudlinux-phalcon-manager.git
 cd cloudlinux-phalcon-manager
 ```
 
