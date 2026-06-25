@@ -8,6 +8,10 @@ declare -A CLP_USAGE_ACCOUNT_COUNTS=()
 declare -A CLP_USAGE_DOMAIN_COUNTS=()
 declare -A CLP_USAGE_USERS=()
 declare -A CLP_USAGE_DOMAINS=()
+declare -A CLP_USAGE_SELECTED_USERS=()
+CLP_USAGE_BULK_PROBE_FAILURES=0
+CLP_USAGE_BULK_LINES=0
+CLP_USAGE_BULK_MATCHES=0
 CLP_USAGE_CURRENT_PROBE_FAILURES=0
 CLP_USAGE_EXTENSION_PROBE_FAILURES=0
 CLP_USAGE_EXTENSION_EMPTY_RESULTS=0
@@ -70,6 +74,28 @@ clp_usage_module_status() {
 
 clp_usage_list_users() {
     local user_path
+    local selector_users
+
+    if command -v selectorctl >/dev/null 2>&1; then
+        selector_users="$(selectorctl --list-users 2>/dev/null |
+            awk '
+                {
+                    gsub(/[,;=:"()<>|]/, " ")
+                    for (i = 1; i <= NF; i++) {
+                        token = $i
+                        gsub(/^[^A-Za-z0-9_.-]+|[^A-Za-z0-9_.-]+$/, "", token)
+                        if (token != "" && token !~ /^(USER|USERS|USERNAME|OWNER|ACCOUNT|PHP|VERSION|ENABLED|DISABLED)$/) {
+                            print token
+                            break
+                        }
+                    }
+                }
+            ' | sort -u || true)"
+        if [[ -n "${selector_users}" ]]; then
+            printf '%s\n' "${selector_users}"
+            return 0
+        fi
+    fi
 
     shopt -s nullglob
     for user_path in "${CLP_CPANEL_USERS_DIR}"/*; do
@@ -98,6 +124,46 @@ clp_usage_domains_csv_for_user() {
     local domains
     domains="$(clp_usage_domains_for_user "${user}" | paste -sd, -)"
     printf '%s\n' "${domains:-"-"}"
+}
+
+clp_usage_prepare_user_map() {
+    CLP_USAGE_SELECTED_USERS=()
+
+    local user
+    for user in "$@"; do
+        [[ -n "${user}" ]] || continue
+        CLP_USAGE_SELECTED_USERS["${user}"]=1
+    done
+}
+
+clp_usage_user_from_text() {
+    local text="$1"
+    local normalized token
+
+    normalized="${text}"
+    normalized="${normalized//,/ }"
+    normalized="${normalized//;/ }"
+    normalized="${normalized//:/ }"
+    normalized="${normalized//= / }"
+    normalized="${normalized//=/ }"
+    normalized="${normalized//\"/ }"
+    normalized="${normalized//\'/ }"
+    normalized="${normalized//(/ }"
+    normalized="${normalized//)/ }"
+    normalized="${normalized//</ }"
+    normalized="${normalized//>/ }"
+    normalized="${normalized//|/ }"
+
+    for token in ${normalized}; do
+        token="${token//[^A-Za-z0-9_.-]/}"
+        [[ -n "${token}" ]] || continue
+        if [[ -n "${CLP_USAGE_SELECTED_USERS["${token}"]+set}" ]]; then
+            printf '%s\n' "${token}"
+            return 0
+        fi
+    done
+
+    return 1
 }
 
 clp_usage_slot_from_text() {
@@ -166,6 +232,19 @@ clp_usage_selector_extensions() {
     return 1
 }
 
+clp_usage_selector_bulk_extensions() {
+    local selector_version="${1:-}"
+
+    if [[ -n "${selector_version}" ]]; then
+        selectorctl --list-user-extensions "--version=${selector_version}" 2>/dev/null && return 0
+        selectorctl --list-user-extensions --version "${selector_version}" 2>/dev/null && return 0
+    fi
+
+    selectorctl --list-user-extensions 2>/dev/null && return 0
+    CLP_USAGE_BULK_PROBE_FAILURES=$((CLP_USAGE_BULK_PROBE_FAILURES + 1))
+    return 1
+}
+
 clp_usage_phalcon_modules_from_extensions() {
     awk '
         {
@@ -219,6 +298,13 @@ clp_usage_print_summary() {
     if ((${#CLP_USAGE_SUMMARY_KEYS[@]} == 0)); then
         printf '%-14s %-8s %-8s %-14s %-9s %-8s %s\n' \
             "USAGE_SUMMARY" "NONE" "-" "-" "0" "0" "no Phalcon selector usage detected"
+        if ((CLP_USAGE_BULK_PROBE_FAILURES > 0)); then
+            printf 'WARNING: selectorctl --list-user-extensions failed %s time(s).\n' \
+                "${CLP_USAGE_BULK_PROBE_FAILURES}" >&2
+        fi
+        if ((CLP_USAGE_BULK_LINES > 0 && CLP_USAGE_BULK_MATCHES == 0)); then
+            printf 'WARNING: selectorctl --list-user-extensions returned output, but no Phalcon rows could be parsed.\n' >&2
+        fi
         if ((CLP_USAGE_CURRENT_PROBE_FAILURES > 0 || CLP_USAGE_EXTENSION_PROBE_FAILURES > 0)); then
             printf 'WARNING: selectorctl probe failures: current=%s extensions=%s\n' \
                 "${CLP_USAGE_CURRENT_PROBE_FAILURES}" \
@@ -242,6 +328,76 @@ clp_usage_print_summary() {
             "${CLP_USAGE_DOMAIN_COUNTS["${key}"]}" \
             "${CLP_USAGE_USERS["${key}"]}"
     done
+}
+
+clp_usage_scan_bulk_line() {
+    local line="$1"
+    local fallback_slot="$2"
+    local module_filter="$3"
+    local user slot domains_csv module status key
+
+    [[ "${line,,}" == *phalcon* ]] || return 0
+
+    user="$(clp_usage_user_from_text "${line}" || true)"
+    [[ -n "${user}" ]] || return 0
+
+    slot="$(clp_usage_slot_from_text "${line}" || true)"
+    if [[ -z "${slot}" && -n "${fallback_slot}" ]]; then
+        slot="${fallback_slot}"
+    fi
+    [[ -n "${slot}" ]] || return 0
+
+    domains_csv="$(clp_usage_domains_csv_for_user "${user}")"
+
+    while IFS= read -r module; do
+        [[ -n "${module}" ]] || continue
+        if [[ -n "${module_filter}" && "${module}" != "${module_filter%.so}.so" ]]; then
+            continue
+        fi
+        status="$(clp_usage_module_status "${slot}" "${module}")"
+        key="${status}|${slot}|${module}"
+        clp_usage_add_summary "${key}" "${user}" "${domains_csv}"
+        CLP_USAGE_BULK_MATCHES=$((CLP_USAGE_BULK_MATCHES + 1))
+        printf '%-14s %-8s %-8s %-14s %-16s %s\n' \
+            "SELECTOR_USE" "${status}" "${slot}" "${module}" "${user}" "${domains_csv}"
+    done < <(printf '%s\n' "${line}" | clp_usage_phalcon_modules_from_extensions)
+}
+
+clp_usage_scan_bulk_output() {
+    local output="$1"
+    local fallback_slot="$2"
+    local module_filter="$3"
+    local line
+
+    while IFS= read -r line; do
+        [[ -n "${line}" ]] || continue
+        CLP_USAGE_BULK_LINES=$((CLP_USAGE_BULK_LINES + 1))
+        clp_usage_scan_bulk_line "${line}" "${fallback_slot}" "${module_filter}"
+    done <<< "${output}"
+}
+
+clp_usage_scan_bulk() {
+    local module_filter="$1"
+    shift
+    local -a slots=("$@")
+    local slot selector_version output
+    local attempted=0
+
+    if ((${#slots[@]} > 0)); then
+        for slot in "${slots[@]}"; do
+            selector_version="$(clp_usage_selector_version_for_slot "${slot}")" || continue
+            output="$(clp_usage_selector_bulk_extensions "${selector_version}" || true)"
+            attempted=1
+            [[ -n "${output}" ]] || continue
+            clp_usage_scan_bulk_output "${output}" "${slot}" "${module_filter}"
+        done
+        [[ "${attempted}" == "1" ]]
+        return
+    fi
+
+    output="$(clp_usage_selector_bulk_extensions "" || true)"
+    [[ -n "${output}" ]] || return 1
+    clp_usage_scan_bulk_output "${output}" "" "${module_filter}"
 }
 
 clp_usage_scan_user_slot() {
@@ -277,6 +433,7 @@ clp_cmd_usage() {
     local module_filter=""
     local user_filter=""
     local all_php=0
+    local probe_users=0
     local -a users=()
     local -a slots=()
     local user slot current_slot
@@ -309,6 +466,10 @@ clp_cmd_usage() {
                 ;;
             --all-php)
                 all_php=1
+                shift
+                ;;
+            --probe-users)
+                probe_users=1
                 shift
                 ;;
             *)
@@ -350,6 +511,7 @@ clp_cmd_usage() {
 
     clp_usage_load_managed_modules
     clp_usage_load_official_modules
+    clp_usage_prepare_user_map "${users[@]}"
 
     printf 'cl-phalcon selector usage\n'
     printf 'root: %s\n' "${CLP_ROOT:-/}"
@@ -362,17 +524,26 @@ clp_cmd_usage() {
     printf '\n%-14s %-8s %-8s %-14s %-16s %s\n' \
         "TYPE" "STATUS" "SLOT" "MODULE" "USER" "DOMAINS"
 
-    for user in "${users[@]}"; do
-        if [[ -n "${php_filter}" || "${all_php}" == "1" ]]; then
-            for slot in "${slots[@]}"; do
-                clp_usage_scan_user_slot "${user}" "${slot}" "${module_filter}"
-            done
-        else
-            current_slot="$(clp_usage_selector_current_slot "${user}" || true)"
-            [[ -n "${current_slot}" ]] || continue
-            clp_usage_scan_user_slot "${user}" "${current_slot}" "${module_filter}"
+    if ! clp_usage_scan_bulk "${module_filter}" "${slots[@]}"; then
+        printf 'WARNING: selectorctl --list-user-extensions is unavailable or returned no output.\n' >&2
+        if [[ "${probe_users}" != "1" ]]; then
+            printf '         Re-run with --probe-users to use the slower per-account selectorctl fallback.\n' >&2
         fi
-    done
+    fi
+
+    if [[ "${probe_users}" == "1" && "${CLP_USAGE_BULK_MATCHES}" == "0" ]]; then
+        for user in "${users[@]}"; do
+            if [[ -n "${php_filter}" || "${all_php}" == "1" ]]; then
+                for slot in "${slots[@]}"; do
+                    clp_usage_scan_user_slot "${user}" "${slot}" "${module_filter}"
+                done
+            else
+                current_slot="$(clp_usage_selector_current_slot "${user}" || true)"
+                [[ -n "${current_slot}" ]] || continue
+                clp_usage_scan_user_slot "${user}" "${current_slot}" "${module_filter}"
+            fi
+        done
+    fi
 
     printf '\n'
     clp_usage_print_summary

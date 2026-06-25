@@ -56,6 +56,26 @@ EOF
 user=""
 version=""
 
+if [[ "$1" == "--list-users" ]]; then
+  printf '%s\n' "alice" "bob" "carol"
+  exit 0
+fi
+
+if [[ "$1" == "--list-user-extensions" ]]; then
+  if [[ "$*" == *"--version=8.5"* || "$*" == *"--version 8.5"* ]]; then
+    printf '%s\n' \
+      "alice php85 enabled: pdo, phalcon516" \
+      "bob php85 enabled: pdo, phalcon5" \
+      "carol php85 enabled: pdo"
+  else
+    printf '%s\n' \
+      "alice php85 enabled: pdo, phalcon516" \
+      "bob php85 enabled: pdo, phalcon5" \
+      "carol php85 enabled: pdo"
+  fi
+  exit 0
+fi
+
 for arg in "$@"; do
   case "${arg}" in
     --user=*)
@@ -113,4 +133,13 @@ EOF
   [[ "$output" =~ USAGE_SUMMARY[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+1[[:space:]]+2[[:space:]]+alice ]]
   [[ "$output" =~ USAGE_SUMMARY[[:space:]]+OFFICIAL[[:space:]]+php85[[:space:]]+phalcon5\.so[[:space:]]+1[[:space:]]+1[[:space:]]+bob ]]
   [[ "$output" != *"carol.example"* ]]
+}
+
+@test "usage can filter the bulk selector report by php slot and module" {
+  run "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --php php85 --module phalcon516
+  [ "$status" -eq 0 ]
+
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+alice ]]
+  [[ "$output" != *"phalcon5.so"* ]]
+  [[ "$output" =~ USAGE_SUMMARY[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+1[[:space:]]+2[[:space:]]+alice ]]
 }
