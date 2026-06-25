@@ -254,14 +254,17 @@ cl-phalcon usage --php php85 --module phalcon516
 cl-phalcon usage --user accountname
 ```
 
-By default, `usage` reads CloudLinux's bulk selector report with
-`selectorctl --list-user-extensions` and uses `selectorctl --list-users` for the
-account list when available. Use `--php php85` to audit a specific alt-php slot,
-or `--module phalcon516` to narrow the report to one selector module.
+By default, `usage` uses `selectorctl --list-users` for the account list. It
+tries CloudLinux's bulk selector report first with
+`selectorctl --list-user-extensions`; if that host returns no bulk output, it
+automatically falls back to per-account probes such as
+`selectorctl --list-user-extensions --user=account --version=8.5`. Use
+`--php php85` to audit a specific alt-php slot, or `--module phalcon516` to
+narrow the report to one selector module.
 
-If the bulk selector report is unavailable on a host, `usage` will say so
-instead of silently running slow per-account probes. Add `--probe-users` only
-when you intentionally want that slower fallback.
+`--probe-users` is only for older CloudLinux selectors where
+`--list-user-extensions --user=...` is not available. It uses the older
+per-account selector query path and may be slower.
 
 This command reports PHP Selector enablement. It does not prove whether an
 application's PHP code actively imports or executes Phalcon classes.

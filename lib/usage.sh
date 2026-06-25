@@ -15,6 +15,8 @@ CLP_USAGE_BULK_MATCHES=0
 CLP_USAGE_CURRENT_PROBE_FAILURES=0
 CLP_USAGE_EXTENSION_PROBE_FAILURES=0
 CLP_USAGE_EXTENSION_EMPTY_RESULTS=0
+CLP_USAGE_LIST_EXT_STYLE_WITH_VERSION=""
+CLP_USAGE_LIST_EXT_STYLE_WITHOUT_VERSION=""
 
 clp_usage_load_managed_modules() {
     CLP_USAGE_MANAGED_MODULES=()
@@ -79,6 +81,7 @@ clp_usage_list_users() {
     if command -v selectorctl >/dev/null 2>&1; then
         selector_users="$(selectorctl --list-users 2>/dev/null |
             awk '
+                BEGIN { IGNORECASE = 1 }
                 {
                     gsub(/[,;=:"()<>|]/, " ")
                     for (i = 1; i <= NF; i++) {
@@ -200,6 +203,14 @@ clp_usage_selector_current_slot() {
     local user="$1"
     local output
 
+    if output="$(selectorctl --current "--user=${user}" 2>/dev/null)"; then
+        clp_usage_slot_from_text "${output}" && return 0
+    fi
+
+    if output="$(selectorctl --current --user "${user}" 2>/dev/null)"; then
+        clp_usage_slot_from_text "${output}" && return 0
+    fi
+
     if output="$(selectorctl --user-current "--user=${user}" 2>/dev/null)"; then
         clp_usage_slot_from_text "${output}" && return 0
     fi
@@ -242,6 +253,92 @@ clp_usage_selector_bulk_extensions() {
 
     selectorctl --list-user-extensions 2>/dev/null && return 0
     CLP_USAGE_BULK_PROBE_FAILURES=$((CLP_USAGE_BULK_PROBE_FAILURES + 1))
+    return 1
+}
+
+clp_usage_selector_list_user_extensions_style() {
+    local style="$1"
+    local user="$2"
+    local selector_version="${3:-}"
+
+    case "${style}" in
+        user_equals_version_equals)
+            selectorctl --list-user-extensions "--user=${user}" "--version=${selector_version}" 2>/dev/null
+            ;;
+        user_split_version_split)
+            selectorctl --list-user-extensions --user "${user}" --version "${selector_version}" 2>/dev/null
+            ;;
+        user_positional_version_split)
+            selectorctl --list-user-extensions "${user}" --version "${selector_version}" 2>/dev/null
+            ;;
+        legacy_user_equals_version_equals)
+            selectorctl "--list-user-extensions=${user}" "--version=${selector_version}" 2>/dev/null
+            ;;
+        user_equals)
+            selectorctl --list-user-extensions "--user=${user}" 2>/dev/null
+            ;;
+        user_split)
+            selectorctl --list-user-extensions --user "${user}" 2>/dev/null
+            ;;
+        user_positional)
+            selectorctl --list-user-extensions "${user}" 2>/dev/null
+            ;;
+        legacy_user_equals)
+            selectorctl "--list-user-extensions=${user}" 2>/dev/null
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+clp_usage_selector_list_user_extensions() {
+    local user="$1"
+    local selector_version="${2:-}"
+    local -a styles=()
+    local cached_style style output
+
+    if [[ -n "${selector_version}" ]]; then
+        cached_style="${CLP_USAGE_LIST_EXT_STYLE_WITH_VERSION}"
+        styles=(
+            user_equals_version_equals
+            user_split_version_split
+            user_positional_version_split
+            legacy_user_equals_version_equals
+        )
+    else
+        cached_style="${CLP_USAGE_LIST_EXT_STYLE_WITHOUT_VERSION}"
+        styles=(
+            user_equals
+            user_split
+            user_positional
+            legacy_user_equals
+        )
+    fi
+
+    if [[ -n "${cached_style}" ]]; then
+        output="$(clp_usage_selector_list_user_extensions_style "${cached_style}" "${user}" "${selector_version}" || true)"
+        if [[ -n "${output}" ]]; then
+            printf '%s\n' "${output}"
+            return 0
+        fi
+        CLP_USAGE_EXTENSION_EMPTY_RESULTS=$((CLP_USAGE_EXTENSION_EMPTY_RESULTS + 1))
+        return 1
+    fi
+
+    for style in "${styles[@]}"; do
+        output="$(clp_usage_selector_list_user_extensions_style "${style}" "${user}" "${selector_version}" || true)"
+        [[ -n "${output}" ]] || continue
+        if [[ -n "${selector_version}" ]]; then
+            CLP_USAGE_LIST_EXT_STYLE_WITH_VERSION="${style}"
+        else
+            CLP_USAGE_LIST_EXT_STYLE_WITHOUT_VERSION="${style}"
+        fi
+        printf '%s\n' "${output}"
+        return 0
+    done
+
+    CLP_USAGE_EXTENSION_EMPTY_RESULTS=$((CLP_USAGE_EXTENSION_EMPTY_RESULTS + 1))
     return 1
 }
 
@@ -400,6 +497,52 @@ clp_usage_scan_bulk() {
     clp_usage_scan_bulk_output "${output}" "" "${module_filter}"
 }
 
+clp_usage_scan_list_user_extensions() {
+    local module_filter="$1"
+    shift
+    local -a slots=("$@")
+    local user slot selector_version output before_matches
+
+    if ((${#slots[@]} > 0)); then
+        for user in "${!CLP_USAGE_SELECTED_USERS[@]}"; do
+            for slot in "${slots[@]}"; do
+                selector_version="$(clp_usage_selector_version_for_slot "${slot}")" || continue
+                before_matches="${CLP_USAGE_BULK_MATCHES}"
+                output="$(clp_usage_selector_list_user_extensions "${user}" "${selector_version}" || true)"
+                [[ -n "${output}" ]] || continue
+                clp_usage_scan_bulk_output "${output}" "${slot}" "${module_filter}"
+                if [[ "${CLP_USAGE_BULK_MATCHES}" == "${before_matches}" ]]; then
+                    clp_usage_scan_bulk_output "$(printf '%s %s %s\n' "${user}" "${slot}" "${output}")" "${slot}" "${module_filter}"
+                fi
+            done
+        done
+        return 0
+    fi
+
+    for user in "${!CLP_USAGE_SELECTED_USERS[@]}"; do
+        slot="$(clp_usage_selector_current_slot "${user}" || true)"
+        if [[ -n "${slot}" ]]; then
+            selector_version="$(clp_usage_selector_version_for_slot "${slot}")" || continue
+            output="$(clp_usage_selector_list_user_extensions "${user}" "${selector_version}" || true)"
+            if [[ -z "${output}" ]]; then
+                output="$(clp_usage_selector_list_user_extensions "${user}" "" || true)"
+            fi
+            [[ -n "${output}" ]] || continue
+            clp_usage_scan_bulk_output "$(printf '%s %s %s\n' "${user}" "${slot}" "${output}")" "${slot}" "${module_filter}"
+            continue
+        fi
+
+        before_matches="${CLP_USAGE_BULK_MATCHES}"
+        output="$(clp_usage_selector_list_user_extensions "${user}" "" || true)"
+        if [[ -n "${output}" ]]; then
+            clp_usage_scan_bulk_output "${output}" "" "${module_filter}"
+            if [[ "${CLP_USAGE_BULK_MATCHES}" != "${before_matches}" ]]; then
+                continue
+            fi
+        fi
+    done
+}
+
 clp_usage_scan_user_slot() {
     local user="$1"
     local slot="$2"
@@ -524,10 +667,15 @@ clp_cmd_usage() {
     printf '\n%-14s %-8s %-8s %-14s %-16s %s\n' \
         "TYPE" "STATUS" "SLOT" "MODULE" "USER" "DOMAINS"
 
-    if ! clp_usage_scan_bulk "${module_filter}" "${slots[@]}"; then
-        printf 'WARNING: selectorctl --list-user-extensions is unavailable or returned no output.\n' >&2
+    clp_usage_scan_bulk "${module_filter}" "${slots[@]}" || true
+    if [[ "${CLP_USAGE_BULK_MATCHES}" == "0" ]]; then
+        clp_usage_scan_list_user_extensions "${module_filter}" "${slots[@]}"
+    fi
+
+    if [[ "${CLP_USAGE_BULK_MATCHES}" == "0" ]]; then
+        printf 'WARNING: no Phalcon usage found from selectorctl --list-user-extensions output.\n' >&2
         if [[ "${probe_users}" != "1" ]]; then
-            printf '         Re-run with --probe-users to use the slower per-account selectorctl fallback.\n' >&2
+            printf '         Re-run with --probe-users to use the older per-account selectorctl fallback.\n' >&2
         fi
     fi
 

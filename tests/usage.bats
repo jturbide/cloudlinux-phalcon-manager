@@ -56,26 +56,7 @@ EOF
 user=""
 version=""
 
-if [[ "$1" == "--list-users" ]]; then
-  printf '%s\n' "alice" "bob" "carol"
-  exit 0
-fi
-
-if [[ "$1" == "--list-user-extensions" ]]; then
-  if [[ "$*" == *"--version=8.5"* || "$*" == *"--version 8.5"* ]]; then
-    printf '%s\n' \
-      "alice php85 enabled: pdo, phalcon516" \
-      "bob php85 enabled: pdo, phalcon5" \
-      "carol php85 enabled: pdo"
-  else
-    printf '%s\n' \
-      "alice php85 enabled: pdo, phalcon516" \
-      "bob php85 enabled: pdo, phalcon5" \
-      "carol php85 enabled: pdo"
-  fi
-  exit 0
-fi
-
+previous=""
 for arg in "$@"; do
   case "${arg}" in
     --user=*)
@@ -84,8 +65,36 @@ for arg in "$@"; do
     --version=*)
       version="${arg#--version=}"
       ;;
+    *)
+      if [[ "${previous}" == "--user" ]]; then
+        user="${arg}"
+      elif [[ "${previous}" == "--version" ]]; then
+        version="${arg}"
+      fi
+      ;;
   esac
+  previous="${arg}"
 done
+
+if [[ "$1" == "--list-users" ]]; then
+  printf '%s\n' "alice" "bob" "carol"
+  exit 0
+fi
+
+if [[ "$1" == "--list-user-extensions" ]]; then
+  [[ -n "${user}" ]] || exit 0
+  if [[ -n "${version}" && "${CLP_TEST_SELECTOR_NO_VERSION_ONLY:-0}" == "1" ]]; then
+    exit 0
+  fi
+  if [[ "${version}" == "8.5" || -z "${version}" ]]; then
+    case "${user}" in
+      alice) echo "enabled: pdo, phalcon516" ;;
+      bob) echo "enabled: pdo, phalcon5" ;;
+      carol) echo "enabled: pdo" ;;
+    esac
+  fi
+  exit 0
+fi
 
 if [[ "$1" == "--user-current" ]]; then
   case "${user}" in
@@ -142,4 +151,14 @@ EOF
   [[ "$output" =~ SELECTOR_USE[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+alice ]]
   [[ "$output" != *"phalcon5.so"* ]]
   [[ "$output" =~ USAGE_SUMMARY[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+1[[:space:]]+2[[:space:]]+alice ]]
+}
+
+@test "usage falls back to unversioned per-user selector extension output" {
+  export CLP_TEST_SELECTOR_NO_VERSION_ONLY=1
+
+  run "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage
+  [ "$status" -eq 0 ]
+
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+alice ]]
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+OFFICIAL[[:space:]]+php85[[:space:]]+phalcon5\.so[[:space:]]+bob ]]
 }
