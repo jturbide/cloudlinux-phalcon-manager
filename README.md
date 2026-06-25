@@ -56,16 +56,68 @@ root, but production use should not.
 
 ## Install the CLI
 
-From a checkout:
+Run these commands as `root` on the CloudLinux/cPanel server.
+
+Install required operating-system tools first:
+
+```bash
+dnf install -y git gcc make jq
+```
+
+Make sure CageFS is installed and that each PHP slot you plan to build has its
+matching CloudLinux development package installed. Package names vary by
+CloudLinux release, but they are commonly shaped like:
+
+```bash
+dnf install -y alt-php85-devel
+```
+
+Clone the project. Replace `OWNER` with the GitHub user or organization that
+hosts the public repository:
+
+```bash
+cd /usr/local/src
+git clone https://github.com/OWNER/cloudlinux-phalcon-manager.git
+cd cloudlinux-phalcon-manager
+```
+
+Install the command and its libraries:
 
 ```bash
 install -m 0755 bin/cl-phalcon /usr/local/sbin/cl-phalcon
-install -d /usr/local/lib/cloudlinux-phalcon-manager
-cp -a lib /usr/local/lib/cloudlinux-phalcon-manager/
+install -d -m 0755 /usr/local/lib/cloudlinux-phalcon-manager/lib
+install -m 0644 lib/*.sh /usr/local/lib/cloudlinux-phalcon-manager/lib/
+```
+
+Verify the installed command:
+
+```bash
+cl-phalcon --version
+cl-phalcon doctor
+cl-phalcon detect
 ```
 
 If you install the script somewhere else, keep `bin/cl-phalcon` and `lib/`
 together, or wrap the repo-local `bin/cl-phalcon`.
+
+For quick testing from a checkout without installing system-wide:
+
+```bash
+chmod +x bin/cl-phalcon
+./bin/cl-phalcon doctor
+./bin/cl-phalcon detect
+```
+
+To upgrade an existing install from the same checkout:
+
+```bash
+cd /usr/local/src/cloudlinux-phalcon-manager
+git pull --ff-only
+install -m 0755 bin/cl-phalcon /usr/local/sbin/cl-phalcon
+install -d -m 0755 /usr/local/lib/cloudlinux-phalcon-manager/lib
+install -m 0644 lib/*.sh /usr/local/lib/cloudlinux-phalcon-manager/lib/
+cl-phalcon --version
+```
 
 ## Commands
 
