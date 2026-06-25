@@ -460,6 +460,30 @@ clp_usage_scan_bulk_line() {
     done < <(printf '%s\n' "${line}" | clp_usage_phalcon_modules_from_extensions)
 }
 
+clp_usage_scan_user_extension_output() {
+    local user="$1"
+    local slot="$2"
+    local output="$3"
+    local module_filter="$4"
+    local domains_csv module status key
+
+    [[ -n "${user}" && -n "${slot}" && -n "${output}" ]] || return 0
+    domains_csv="$(clp_usage_domains_csv_for_user "${user}")"
+
+    while IFS= read -r module; do
+        [[ -n "${module}" ]] || continue
+        if [[ -n "${module_filter}" && "${module}" != "${module_filter%.so}.so" ]]; then
+            continue
+        fi
+        status="$(clp_usage_module_status "${slot}" "${module}")"
+        key="${status}|${slot}|${module}"
+        clp_usage_add_summary "${key}" "${user}" "${domains_csv}"
+        CLP_USAGE_BULK_MATCHES=$((CLP_USAGE_BULK_MATCHES + 1))
+        printf '%-14s %-8s %-8s %-14s %-16s %s\n' \
+            "SELECTOR_USE" "${status}" "${slot}" "${module}" "${user}" "${domains_csv}"
+    done < <(printf '%s\n' "${output}" | clp_usage_phalcon_modules_from_extensions)
+}
+
 clp_usage_scan_bulk_output() {
     local output="$1"
     local fallback_slot="$2"
@@ -512,7 +536,7 @@ clp_usage_scan_list_user_extensions() {
                 [[ -n "${output}" ]] || continue
                 clp_usage_scan_bulk_output "${output}" "${slot}" "${module_filter}"
                 if [[ "${CLP_USAGE_BULK_MATCHES}" == "${before_matches}" ]]; then
-                    clp_usage_scan_bulk_output "$(printf '%s %s %s\n' "${user}" "${slot}" "${output}")" "${slot}" "${module_filter}"
+                    clp_usage_scan_user_extension_output "${user}" "${slot}" "${output}" "${module_filter}"
                 fi
             done
         done
@@ -528,7 +552,7 @@ clp_usage_scan_list_user_extensions() {
                 output="$(clp_usage_selector_list_user_extensions "${user}" "" || true)"
             fi
             [[ -n "${output}" ]] || continue
-            clp_usage_scan_bulk_output "$(printf '%s %s %s\n' "${user}" "${slot}" "${output}")" "${slot}" "${module_filter}"
+            clp_usage_scan_user_extension_output "${user}" "${slot}" "${output}" "${module_filter}"
             continue
         fi
 

@@ -88,9 +88,9 @@ if [[ "$1" == "--list-user-extensions" ]]; then
   fi
   if [[ "${version}" == "8.5" || -z "${version}" ]]; then
     case "${user}" in
-      alice) echo "enabled: pdo, phalcon516" ;;
-      bob) echo "enabled: pdo, phalcon5" ;;
-      carol) echo "enabled: pdo" ;;
+      alice) printf '%s\n' "pdo" "phalcon516" ;;
+      bob) printf '%s\n' "pdo" "phalcon5" ;;
+      carol) printf '%s\n' "pdo" ;;
     esac
   fi
   exit 0
@@ -112,9 +112,9 @@ if [[ "${version}" != "8.5" ]]; then
 fi
 
 case "${user}" in
-  alice) echo "enabled: pdo, phalcon516" ;;
-  bob) echo "enabled: pdo, phalcon5" ;;
-  carol) echo "enabled: pdo" ;;
+  alice) printf '%s\n' "pdo" "phalcon516" ;;
+  bob) printf '%s\n' "pdo" "phalcon5" ;;
+  carol) printf '%s\n' "pdo" ;;
 esac
 EOF
   chmod +x "${BATS_TEST_TMPDIR}/bin/selectorctl"
