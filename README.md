@@ -129,7 +129,21 @@ chmod +x bin/cl-phalcon
 ./bin/cl-phalcon detect
 ```
 
-To upgrade an existing install from the same checkout:
+## Update the CLI
+
+If you run `./bin/cl-phalcon` directly from the checkout, `git pull` is enough
+to update the working copy:
+
+```bash
+cd /usr/local/src/cloudlinux-phalcon-manager
+git pull --ff-only
+./bin/cl-phalcon --version
+./bin/cl-phalcon doctor
+./bin/cl-phalcon detect
+```
+
+If you installed `cl-phalcon` into `/usr/local/sbin`, `git pull` updates only
+the checkout. Reinstall the command and library files after pulling:
 
 ```bash
 cd /usr/local/src/cloudlinux-phalcon-manager
@@ -138,7 +152,14 @@ install -m 0755 bin/cl-phalcon /usr/local/sbin/cl-phalcon
 install -d -m 0755 /usr/local/lib/cloudlinux-phalcon-manager/lib
 install -m 0644 lib/*.sh /usr/local/lib/cloudlinux-phalcon-manager/lib/
 cl-phalcon --version
+cl-phalcon doctor
+cl-phalcon detect
 ```
+
+This updates the `cl-phalcon` tool itself. It does not rebuild installed
+Phalcon modules. To check whether managed modules need rebuilding after
+CloudLinux PHP package updates, use `cl-phalcon rebuild-needed` or
+`cl-phalcon update --yes`.
 
 ## Commands
 
