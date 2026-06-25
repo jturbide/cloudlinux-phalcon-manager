@@ -216,8 +216,11 @@ clp_phalcon_default_ini_dependencies() {
     local phalcon_version="$1"
 
     case "$(clp_phalcon_major "${phalcon_version}")" in
+        5)
+            printf 'pdo\n'
+            ;;
         4)
-            printf 'psr\n'
+            printf 'psr,pdo\n'
             ;;
         *)
             printf '\n'

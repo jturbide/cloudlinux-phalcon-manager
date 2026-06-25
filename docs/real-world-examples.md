@@ -45,9 +45,9 @@ cl-phalcon install \
   --yes
 ```
 
-For Phalcon 4, `cl-phalcon` writes `extension=psr.so` before
-`extension=phalcon4.so` by default. Use `--dependencies psr,pdo,json` only when
-you intentionally want the older manual load order.
+For Phalcon 4, `cl-phalcon` writes `extension=psr.so` and `extension=pdo.so`
+before `extension=phalcon4.so` by default. Use `--dependencies psr,pdo,json`
+only when you intentionally want the older manual load order.
 
 ## After a CloudLinux alt-php Update
 

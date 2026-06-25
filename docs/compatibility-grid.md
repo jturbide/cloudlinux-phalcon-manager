@@ -69,9 +69,10 @@ PHP 8.0 is the transition slot:
   branch.
 - For PHP 7.2, 7.3, and 7.4 Phalcon 4 installs, use the `4.1.x` branch.
 - After PHP 8.0, do not recommend Phalcon below 5.
-- Phalcon 4 installs automatically write `extension=psr.so` before
-  `extension=phalcon4.so`. See `docs/dependencies.md` for the dependency
-  matrix and override examples.
+- Phalcon 4 installs automatically write `extension=psr.so` and
+  `extension=pdo.so` before `extension=phalcon4.so`. Phalcon 5 installs write
+  `extension=pdo.so` before the versioned module. See `docs/dependencies.md`
+  for the dependency matrix and override examples.
 
 ## Example Commands
 

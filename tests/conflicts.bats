@@ -11,6 +11,7 @@ setup() {
   mkdir -p "$(dirname "${CLP_SELECTOR_CONFLICTS}")" "${CLP_STATE_DIR}"
   cat > "${CLP_SELECTOR_CONFLICTS}" <<'EOF'
 unrelated: other
+phalcon, phalcon2, phalcon514
 phalcon514: oldduplicate
 EOF
   cat > "${CLP_STATE_DIR}/installs.json" <<'EOF'
@@ -37,9 +38,18 @@ EOF
   run grep -F "unrelated: other" "${CLP_SELECTOR_CONFLICTS}"
   [ "$status" -eq 0 ]
 
-  run grep -F "phalcon599:" "${CLP_SELECTOR_CONFLICTS}"
+  run grep -F "phalcon, phalcon2, phalcon3, phalcon4" "${CLP_SELECTOR_CONFLICTS}"
+  [ "$status" -eq 0 ]
+
+  run grep -F "phalcon599" "${CLP_SELECTOR_CONFLICTS}"
   [ "$status" -eq 0 ]
 
   run grep -F "phalcon514: oldduplicate" "${CLP_SELECTOR_CONFLICTS}"
+  [ "$status" -ne 0 ]
+
+  run grep -F "phalcon, phalcon2, phalcon514" "${CLP_SELECTOR_CONFLICTS}"
+  [ "$status" -ne 0 ]
+
+  run grep -F "phalcon599:" "${CLP_SELECTOR_CONFLICTS}"
   [ "$status" -ne 0 ]
 }

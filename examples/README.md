@@ -32,7 +32,8 @@ The `phalcon59` examples are intentionally active even when CloudLinux provides
 an official `phalcon5` package. They are for older projects pinned to Phalcon
 5.9.3 before later Phalcon 5 framework behavior changes.
 
-Phalcon 4 examples rely on the tool's default `psr` INI dependency. See
+Phalcon 4 examples rely on the tool's default `psr,pdo` INI dependencies.
+Phalcon 5 examples rely on the default `pdo` dependency. See
 `../docs/dependencies.md` before adding legacy `psr,pdo,json` load-order
 overrides.
 

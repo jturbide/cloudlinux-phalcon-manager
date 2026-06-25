@@ -29,6 +29,7 @@ EOF
   touch "${CLP_OPT_ALT}/php85/usr/lib64/php/modules/phalcon514.so"
   {
     echo "extension=psr.so"
+    echo "extension=pdo.so"
     echo "extension=phalcon514.so"
   } > "${CLP_OPT_ALT}/php85/etc/php.d.all/phalcon514.ini"
 
@@ -42,7 +43,7 @@ EOF
       "extension_dir": "${CLP_OPT_ALT}/php85/usr/lib64/php/modules",
       "module_name": "phalcon514.so",
       "ini_path": "${CLP_OPT_ALT}/php85/etc/php.d.all/phalcon514.ini",
-      "ini_dependencies": ["psr"]
+      "ini_dependencies": ["psr", "pdo"]
     }
   ]
 }
@@ -54,4 +55,5 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"PASS php85/phalcon514.so"* ]]
   grep -q "extension=psr.so" "${CLP_VALIDATE_ARGS_LOG}"
+  grep -q "extension=pdo.so" "${CLP_VALIDATE_ARGS_LOG}"
 }

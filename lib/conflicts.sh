@@ -38,31 +38,21 @@ clp_conflict_modules() {
         clp_cloudlinux_official_conflict_modules
         clp_default_conflict_modules
         clp_metadata_installed_module_bases || true
-    } | awk 'NF && !seen[$0]++' | sort
+    } | awk 'NF && !seen[$0]++'
 }
 
 clp_generate_conflicts_block() {
     local -a modules=()
-    local module other
+    local module
 
     while IFS= read -r module; do
         modules+=("${module}")
     done < <(clp_conflict_modules)
 
     printf '%s\n' "${CLP_CONFLICTS_BEGIN}"
-    printf '# Managed by cl-phalcon. One module per line, followed by the modules it conflicts with.\n'
+    printf '# Managed by cl-phalcon. CloudLinux expects comma-separated mutual conflict groups.\n'
     printf '# Includes CloudLinux official selector names such as phalcon so custom modules cannot be enabled beside them.\n'
-
-    local -a others=()
-    for module in "${modules[@]}"; do
-        others=()
-        for other in "${modules[@]}"; do
-            [[ "${other}" == "${module}" ]] && continue
-            others+=("${other}")
-        done
-        printf '%s: %s\n' "${module}" "$(clp_join_by ' ' "${others[@]}")"
-    done
-
+    printf '%s\n' "$(clp_join_by ', ' "${modules[@]}")"
     printf '%s\n' "${CLP_CONFLICTS_END}"
 }
 
@@ -101,11 +91,20 @@ clp_rewrite_conflicts_file() {
         $0 == end { in_block = 0; next }
         in_block { next }
         {
-            key = $0
-            sub(/^[[:space:]]+/, "", key)
-            sub(/[[:space:]:=#].*$/, "", key)
-            if (key in managed) {
+            line = $0
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+            if (line ~ /^#/ || line == "") {
+                print
                 next
+            }
+            normalized = line
+            gsub(/[:,]/, " ", normalized)
+            delete tokens
+            split(normalized, tokens, /[[:space:]]+/)
+            for (i in tokens) {
+                if (tokens[i] in managed) {
+                    next
+                }
             }
             print
         }

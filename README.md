@@ -227,8 +227,9 @@ cl-phalcon install \
   --yes
 ```
 
-For Phalcon 4, the generated ini loads `psr.so` before `phalcon4.so` by
-default. Use `--dependencies` only when you want a custom load order.
+For Phalcon 4, the generated ini loads `psr.so` and `pdo.so` before
+`phalcon4.so` by default. For Phalcon 5, it loads `pdo.so` before the versioned
+Phalcon module. Use `--dependencies` only when you want a custom load order.
 
 After CloudLinux updates alt-php packages, preview whether anything actually
 needs a rebuild:
@@ -272,6 +273,25 @@ Then let PHP Selector expose only one Phalcon option at a time:
 cl-phalcon conflicts
 cl-phalcon cagefs-rebuild
 ```
+
+## Migrating Existing Manual Installs
+
+If a versioned module such as `phalcon516.so` was installed manually before
+using `cl-phalcon`, install the same PHP slot, Phalcon version, and module name
+with the tool. The tool will back up the existing module and ini file, replace
+them atomically, write metadata, update conflicts, and rebuild CageFS ini state.
+
+Example:
+
+```bash
+cl-phalcon --dry-run install --php php85 --phalcon 5.16.0 --module phalcon516 --yes
+cl-phalcon install --php php85 --phalcon 5.16.0 --module phalcon516 --yes
+cl-phalcon validate --php php85 --module phalcon516
+```
+
+Backups are written beside the replaced files with a `.bak.YYYYMMDDHHMMSS`
+suffix. Keep the old manual files only as backups; once metadata exists, use
+`cl-phalcon update`, `reinstall`, `remove`, and `validate` for that module.
 
 ## Detection
 
@@ -365,6 +385,7 @@ That writes:
 
 ```ini
 extension=psr.so
+extension=pdo.so
 extension=phalcon4.so
 ```
 
@@ -514,6 +535,13 @@ The managed conflicts block always includes the official selector name
 `phalcon`, plus the versioned names managed by this tool. That prevents an
 account from enabling the CloudLinux official Phalcon extension and a custom
 Phalcon extension at the same time.
+
+The block uses CloudLinux's native comma-separated conflict-group syntax, for
+example:
+
+```text
+phalcon, phalcon2, phalcon3, phalcon4, phalcon5, phalcon59, phalcon516
+```
 
 This tool does not uninstall CloudLinux's official Phalcon RPMs. It coexists
 with them by using versioned module names and PHP Selector conflicts.

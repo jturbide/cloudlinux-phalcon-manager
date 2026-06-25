@@ -33,15 +33,15 @@ setup() {
 @test "ini dependency defaults are version-aware" {
   run bash -c 'source lib/common.sh; clp_resolve_ini_dependencies 4.1.3 ""'
   [ "$status" -eq 0 ]
-  [ "$output" = "psr" ]
+  [ "$output" = "psr,pdo" ]
 
   run bash -c 'source lib/common.sh; clp_resolve_ini_dependencies 4.2.x ""'
   [ "$status" -eq 0 ]
-  [ "$output" = "psr" ]
+  [ "$output" = "psr,pdo" ]
 
   run bash -c 'source lib/common.sh; clp_resolve_ini_dependencies 5.16.0 ""'
   [ "$status" -eq 0 ]
-  [ "$output" = "" ]
+  [ "$output" = "pdo" ]
 
   run bash -c 'source lib/common.sh; clp_resolve_ini_dependencies 4.1.3 "psr,pdo,json"'
   [ "$status" -eq 0 ]

@@ -9,8 +9,9 @@ overwriting CloudLinux's official `phalcon.so`.
 
 Some old manual examples load `psr.so`, `pdo.so`, and `json.so` before
 `phalcon4.so`. The CLI uses a narrower version-aware default: Phalcon 4 loads
-`psr.so` automatically, while PDO/JSON are explicit overrides when a legacy
-server needs that exact manual load order. See `docs/dependencies.md`.
+`psr.so` and `pdo.so` automatically, and Phalcon 5 loads `pdo.so`
+automatically. JSON remains an explicit override when a legacy server needs
+that exact manual load order. See `docs/dependencies.md`.
 
 ```bash
 # --------------------------------------------------------
