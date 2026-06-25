@@ -11,6 +11,7 @@ setup() {
   export CLP_USERDOMAINS_FILE="${CLP_ROOT}/etc/userdomains"
 
   mkdir -p \
+    "${CLP_OPT_ALT}/php82/usr/bin" \
     "${CLP_OPT_ALT}/php85/usr/bin" \
     "${CLP_STATE_DIR}" \
     "${CLP_CPANEL_USERS_DIR}" \
@@ -29,6 +30,18 @@ bob.example: bob
 carol.example: carol
 EOF
 
+  cat > "${CLP_OPT_ALT}/php82/usr/bin/php-config" <<EOF
+#!/usr/bin/env bash
+case "\$1" in
+  --version) echo "8.2.31" ;;
+  --extension-dir) echo "${CLP_OPT_ALT}/php82/usr/lib64/php/modules" ;;
+  *) exit 1 ;;
+esac
+EOF
+  chmod +x "${CLP_OPT_ALT}/php82/usr/bin/php-config"
+  touch "${CLP_OPT_ALT}/php82/usr/bin/phpize"
+  chmod +x "${CLP_OPT_ALT}/php82/usr/bin/phpize"
+
   cat > "${CLP_OPT_ALT}/php85/usr/bin/php-config" <<EOF
 #!/usr/bin/env bash
 case "\$1" in
@@ -44,9 +57,9 @@ EOF
   cat > "${BATS_TEST_TMPDIR}/bin/rpm" <<'EOF'
 #!/usr/bin/env bash
 if [[ "$1" == "-qa" && "$2" == "--qf" ]]; then
-  printf '%s\n' "alt-php85-phalcon5"
+  printf '%s\n' "alt-php82-phalcon5" "alt-php85-phalcon5"
 elif [[ "$1" == "-qa" ]]; then
-  printf '%s\n' "alt-php85-phalcon5-5.14.0-1.el8.x86_64"
+  printf '%s\n' "alt-php82-phalcon5-5.14.0-1.el8.x86_64" "alt-php85-phalcon5-5.14.0-1.el8.x86_64"
 fi
 EOF
   chmod +x "${BATS_TEST_TMPDIR}/bin/rpm"
@@ -86,6 +99,12 @@ if [[ "$1" == "--list-user-extensions" ]]; then
   if [[ -n "${version}" && "${CLP_TEST_SELECTOR_NO_VERSION_ONLY:-0}" == "1" ]]; then
     exit 0
   fi
+  if [[ "${version}" == "8.2" && "${CLP_TEST_SELECTOR_STALE_PHP82:-0}" == "1" ]]; then
+    case "${user}" in
+      alice) printf '%s\n' "pdo" "phalcon5" ;;
+    esac
+    exit 0
+  fi
   if [[ "${version}" == "8.5" || -z "${version}" ]]; then
     case "${user}" in
       alice) printf '%s\n' "pdo" "phalcon516" ;;
@@ -97,6 +116,12 @@ if [[ "$1" == "--list-user-extensions" ]]; then
 fi
 
 if [[ "$1" == "--user-current" ]]; then
+  if [[ "${CLP_TEST_SELECTOR_CURRENT_PHP82:-0}" == "1" ]]; then
+    case "${user}" in
+      alice|bob|carol) echo "Current PHP version: 8.2" ;;
+    esac
+    exit 0
+  fi
   case "${user}" in
     alice|bob|carol) echo "Current PHP version: 8.5" ;;
   esac
@@ -108,6 +133,11 @@ if [[ "$1" != "--user-extensions" ]]; then
 fi
 
 if [[ "${version}" != "8.5" ]]; then
+  if [[ "${version}" == "8.2" && "${CLP_TEST_SELECTOR_STALE_PHP82:-0}" == "1" ]]; then
+    case "${user}" in
+      alice) printf '%s\n' "pdo" "phalcon5" ;;
+    esac
+  fi
   exit 0
 fi
 
@@ -154,11 +184,27 @@ EOF
 }
 
 @test "usage falls back to unversioned per-user selector extension output" {
-  export CLP_TEST_SELECTOR_NO_VERSION_ONLY=1
-
-  run "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage
+  run env CLP_TEST_SELECTOR_NO_VERSION_ONLY=1 "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --current-only
   [ "$status" -eq 0 ]
 
   [[ "$output" =~ SELECTOR_USE[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+alice ]]
   [[ "$output" =~ SELECTOR_USE[[:space:]]+OFFICIAL[[:space:]]+php85[[:space:]]+phalcon5\.so[[:space:]]+bob ]]
+}
+
+@test "usage scans all php slots by default when selector current is stale" {
+  run env CLP_TEST_SELECTOR_CURRENT_PHP82=1 CLP_TEST_SELECTOR_STALE_PHP82=1 \
+    "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --user alice
+  [ "$status" -eq 0 ]
+
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+OFFICIAL[[:space:]]+php82[[:space:]]+phalcon5\.so[[:space:]]+alice ]]
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+alice ]]
+}
+
+@test "usage current-only keeps the legacy selector current behavior" {
+  run env CLP_TEST_SELECTOR_CURRENT_PHP82=1 CLP_TEST_SELECTOR_STALE_PHP82=1 \
+    "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --user alice --current-only
+  [ "$status" -eq 0 ]
+
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+OFFICIAL[[:space:]]+php82[[:space:]]+phalcon5\.so[[:space:]]+alice ]]
+  [[ "$output" != *"phalcon516.so"* ]]
 }

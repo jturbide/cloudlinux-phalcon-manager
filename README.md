@@ -252,15 +252,19 @@ cl-phalcon usage
 cl-phalcon usage --php php85
 cl-phalcon usage --php php85 --module phalcon516
 cl-phalcon usage --user accountname
+cl-phalcon usage --current-only
 ```
 
 By default, `usage` uses `selectorctl --list-users` for the account list. It
-tries CloudLinux's bulk selector report first with
-`selectorctl --list-user-extensions`; if that host returns no bulk output, it
-automatically falls back to per-account probes such as
-`selectorctl --list-user-extensions --user=account --version=8.5`. Use
-`--php php85` to audit a specific alt-php slot, or `--module phalcon516` to
-narrow the report to one selector module.
+scans all detected selector-style `phpNN` versions instead of trusting
+`selectorctl --current`, because cPanel/CloudLinux servers can retain stale
+per-account Selector state for older PHP versions. It tries CloudLinux's bulk
+selector report first with `selectorctl --list-user-extensions`; if that host
+returns no usable bulk output, it automatically falls back to per-account probes
+such as `selectorctl --list-user-extensions --user=account --version=8.5`. Use
+`--php php85` to audit a specific alt-php slot, `--module phalcon516` to narrow
+the report to one selector module, or `--current-only` when you intentionally
+want the faster legacy report for each user's current Selector version only.
 
 `--probe-users` is only for older CloudLinux selectors where
 `--list-user-extensions --user=...` is not available. It uses the older

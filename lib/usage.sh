@@ -9,6 +9,7 @@ declare -A CLP_USAGE_DOMAIN_COUNTS=()
 declare -A CLP_USAGE_USERS=()
 declare -A CLP_USAGE_DOMAINS=()
 declare -A CLP_USAGE_SELECTED_USERS=()
+declare -A CLP_USAGE_SELECTOR_VERSIONS=()
 CLP_USAGE_BULK_PROBE_FAILURES=0
 CLP_USAGE_BULK_LINES=0
 CLP_USAGE_BULK_MATCHES=0
@@ -193,10 +194,16 @@ clp_usage_selector_version_for_slot() {
     local slot="$1"
     local major minor rest
 
+    if [[ -n "${CLP_USAGE_SELECTOR_VERSIONS["${slot}"]+set}" ]]; then
+        printf '%s\n' "${CLP_USAGE_SELECTOR_VERSIONS["${slot}"]}"
+        return 0
+    fi
+
     clp_detect_php_slot "${slot}" >/dev/null
     IFS='.' read -r major minor rest <<< "${CLP_DETECTED_PHP_VERSION}"
     [[ -n "${major}" && -n "${minor}" ]] || return 1
-    printf '%s.%s\n' "${major}" "${minor}"
+    CLP_USAGE_SELECTOR_VERSIONS["${slot}"]="${major}.${minor}"
+    printf '%s\n' "${CLP_USAGE_SELECTOR_VERSIONS["${slot}"]}"
 }
 
 clp_usage_selector_current_slot() {
@@ -600,6 +607,7 @@ clp_cmd_usage() {
     local module_filter=""
     local user_filter=""
     local all_php=0
+    local current_only=0
     local probe_users=0
     local -a users=()
     local -a slots=()
@@ -633,6 +641,10 @@ clp_cmd_usage() {
                 ;;
             --all-php)
                 all_php=1
+                shift
+                ;;
+            --current-only)
+                current_only=1
                 shift
                 ;;
             --probe-users)
@@ -670,7 +682,7 @@ clp_cmd_usage() {
         while IFS= read -r slot; do
             [[ -n "${slot}" ]] && slots+=("${slot}")
         done < <(clp_split_csv_to_lines "${php_filter}")
-    elif [[ "${all_php}" == "1" ]]; then
+    elif [[ "${all_php}" == "1" || "${current_only}" != "1" ]]; then
         while IFS= read -r slot; do
             [[ -n "${slot}" ]] && slots+=("${slot}")
         done < <(clp_detect_slot_names)
@@ -683,7 +695,7 @@ clp_cmd_usage() {
     printf 'cl-phalcon selector usage\n'
     printf 'root: %s\n' "${CLP_ROOT:-/}"
     printf 'users: %s\n' "${#users[@]}"
-    if [[ -n "${php_filter}" || "${all_php}" == "1" ]]; then
+    if [[ -n "${php_filter}" || "${all_php}" == "1" || "${current_only}" != "1" ]]; then
         printf 'slots: %s\n' "$(clp_join_by ', ' "${slots[@]}")"
     else
         printf 'slots: current PHP Selector version per user\n'
