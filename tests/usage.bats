@@ -116,6 +116,9 @@ if [[ "$1" == "--list-user-extensions" ]]; then
 fi
 
 if [[ "$1" == "--user-current" ]]; then
+  if [[ "${CLP_TEST_SELECTOR_USER_CURRENT_FAIL:-0}" == "1" ]]; then
+    exit 1
+  fi
   if [[ "${CLP_TEST_SELECTOR_CURRENT_PHP82:-0}" == "1" ]]; then
     case "${user}" in
       alice|bob|carol) echo "Current PHP version: 8.2" ;;
@@ -126,6 +129,25 @@ if [[ "$1" == "--user-current" ]]; then
     alice|bob|carol) echo "Current PHP version: 8.5" ;;
   esac
   exit 0
+fi
+
+if [[ "$1" == "--user-summary" ]]; then
+  if [[ "${CLP_TEST_SELECTOR_SUMMARY_PHP85:-0}" == "1" ]]; then
+    printf '%s\n' \
+      "8.2 e d -" \
+      "8.5 e - s" \
+      "native e - -"
+    exit 0
+  fi
+  exit 1
+fi
+
+if [[ "$1" == "--current" ]]; then
+  if [[ "${CLP_TEST_SELECTOR_STALE_CURRENT_COMMAND:-0}" == "1" ]]; then
+    echo "Current PHP version: 8.2"
+    exit 0
+  fi
+  exit 1
 fi
 
 if [[ "$1" != "--user-extensions" ]]; then
@@ -183,6 +205,21 @@ EOF
   [[ "$output" =~ USAGE_SUMMARY[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+1[[:space:]]+2[[:space:]]+alice ]]
 }
 
+@test "usage accepts a bounded parallel job limit" {
+  run "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --jobs 2 --user alice
+  [ "$status" -eq 0 ]
+
+  [[ "$output" == *"jobs: 2"* ]]
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+alice ]]
+}
+
+@test "usage rejects invalid parallel job limits" {
+  run "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --jobs 0
+  [ "$status" -ne 0 ]
+
+  [[ "$output" == *"--jobs must be greater than zero"* ]]
+}
+
 @test "usage falls back to unversioned per-user selector extension output" {
   run env CLP_TEST_SELECTOR_NO_VERSION_ONLY=1 "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --current-only
   [ "$status" -eq 0 ]
@@ -207,4 +244,21 @@ EOF
 
   [[ "$output" =~ SELECTOR_USE[[:space:]]+OFFICIAL[[:space:]]+php82[[:space:]]+phalcon5\.so[[:space:]]+alice ]]
   [[ "$output" != *"phalcon516.so"* ]]
+}
+
+@test "usage current-only prefers user-current over stale current command" {
+  run env CLP_TEST_SELECTOR_STALE_CURRENT_COMMAND=1 \
+    "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --user alice --current-only
+  [ "$status" -eq 0 ]
+
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+alice ]]
+  [[ "$output" != *"php82"*"phalcon5.so"* ]]
+}
+
+@test "usage current-only falls back to user-summary selected row" {
+  run env CLP_TEST_SELECTOR_USER_CURRENT_FAIL=1 CLP_TEST_SELECTOR_SUMMARY_PHP85=1 \
+    "${BATS_TEST_DIRNAME}/../bin/cl-phalcon" usage --user alice --current-only
+  [ "$status" -eq 0 ]
+
+  [[ "$output" =~ SELECTOR_USE[[:space:]]+MANAGED[[:space:]]+php85[[:space:]]+phalcon516\.so[[:space:]]+alice ]]
 }

@@ -258,6 +258,7 @@ cl-phalcon usage
 cl-phalcon usage --php php85
 cl-phalcon usage --php php85 --module phalcon516
 cl-phalcon usage --user accountname
+cl-phalcon usage --jobs 12
 cl-phalcon usage --current-only
 ```
 
@@ -271,6 +272,12 @@ such as `selectorctl --list-user-extensions --user=account --version=8.5`. Use
 `--php php85` to audit a specific alt-php slot, `--module phalcon516` to narrow
 the report to one selector module, or `--current-only` when you intentionally
 want the faster legacy report for each user's current Selector version only.
+`--current-only` uses `selectorctl --user-current` first and falls back to the
+selected row from `selectorctl --user-summary` when needed.
+
+When the command has to fall back to per-account probes, it runs them in
+parallel. The default is `--jobs 8`; raise it carefully on large servers, for
+example `--jobs 12`, if `selectorctl` and the server are handling the load well.
 
 `--probe-users` is only for older CloudLinux selectors where
 `--list-user-extensions --user=...` is not available. It uses the older

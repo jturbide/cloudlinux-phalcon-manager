@@ -8,6 +8,7 @@ declare -A CLP_USAGE_ACCOUNT_COUNTS=()
 declare -A CLP_USAGE_DOMAIN_COUNTS=()
 declare -A CLP_USAGE_USERS=()
 declare -A CLP_USAGE_DOMAINS=()
+declare -A CLP_USAGE_USER_DOMAIN_CSV=()
 declare -A CLP_USAGE_SELECTED_USERS=()
 declare -A CLP_USAGE_SELECTOR_VERSIONS=()
 CLP_USAGE_BULK_PROBE_FAILURES=0
@@ -126,8 +127,15 @@ clp_usage_domains_for_user() {
 clp_usage_domains_csv_for_user() {
     local user="$1"
     local domains
+
+    if [[ -n "${CLP_USAGE_USER_DOMAIN_CSV["${user}"]+set}" ]]; then
+        printf '%s\n' "${CLP_USAGE_USER_DOMAIN_CSV["${user}"]}"
+        return 0
+    fi
+
     domains="$(clp_usage_domains_for_user "${user}" | paste -sd, -)"
-    printf '%s\n' "${domains:-"-"}"
+    CLP_USAGE_USER_DOMAIN_CSV["${user}"]="${domains:-"-"}"
+    printf '%s\n' "${CLP_USAGE_USER_DOMAIN_CSV["${user}"]}"
 }
 
 clp_usage_prepare_user_map() {
@@ -206,17 +214,29 @@ clp_usage_selector_version_for_slot() {
     printf '%s\n' "${CLP_USAGE_SELECTOR_VERSIONS["${slot}"]}"
 }
 
+clp_usage_selector_summary_current_slot() {
+    local user="$1"
+    local output version
+
+    output="$(selectorctl --user-summary "--user=${user}" 2>/dev/null || true)"
+    if [[ -z "${output}" ]]; then
+        output="$(selectorctl --user-summary --user "${user}" 2>/dev/null || true)"
+    fi
+    [[ -n "${output}" ]] || return 1
+
+    version="$(awk '
+        $1 != "native" && ($2 == "s" || $3 == "s" || $4 == "s") {
+            print $1
+            exit
+        }
+    ' <<< "${output}")"
+    [[ -n "${version}" ]] || return 1
+    clp_usage_slot_from_text "${version}"
+}
+
 clp_usage_selector_current_slot() {
     local user="$1"
     local output
-
-    if output="$(selectorctl --current "--user=${user}" 2>/dev/null)"; then
-        clp_usage_slot_from_text "${output}" && return 0
-    fi
-
-    if output="$(selectorctl --current --user "${user}" 2>/dev/null)"; then
-        clp_usage_slot_from_text "${output}" && return 0
-    fi
 
     if output="$(selectorctl --user-current "--user=${user}" 2>/dev/null)"; then
         clp_usage_slot_from_text "${output}" && return 0
@@ -231,6 +251,18 @@ clp_usage_selector_current_slot() {
     fi
 
     if output="$(selectorctl --user-current "${user}" 2>/dev/null)"; then
+        clp_usage_slot_from_text "${output}" && return 0
+    fi
+
+    if clp_usage_selector_summary_current_slot "${user}"; then
+        return 0
+    fi
+
+    if output="$(selectorctl --current "--user=${user}" 2>/dev/null)"; then
+        clp_usage_slot_from_text "${output}" && return 0
+    fi
+
+    if output="$(selectorctl --current --user "${user}" 2>/dev/null)"; then
         clp_usage_slot_from_text "${output}" && return 0
     fi
 
@@ -347,6 +379,51 @@ clp_usage_selector_list_user_extensions() {
 
     CLP_USAGE_EXTENSION_EMPTY_RESULTS=$((CLP_USAGE_EXTENSION_EMPTY_RESULTS + 1))
     return 1
+}
+
+clp_usage_normalize_jobs() {
+    local jobs="$1"
+
+    [[ "${jobs}" =~ ^[0-9]+$ ]] || clp_die "--jobs must be a positive integer."
+    ((jobs > 0)) || clp_die "--jobs must be greater than zero."
+    ((jobs <= 64)) || clp_die "--jobs must be 64 or lower."
+    printf '%s\n' "${jobs}"
+}
+
+clp_usage_wait_for_job_capacity() {
+    local max_jobs="$1"
+    local running
+
+    while :; do
+        running="$(jobs -rp | wc -l)"
+        ((running < max_jobs)) && return 0
+        sleep 0.05
+    done
+}
+
+clp_usage_probe_user_slot_to_files() {
+    local user="$1"
+    local slot="$2"
+    local selector_version="$3"
+    local meta_file="$4"
+    local output_file="$5"
+    local output
+
+    output="$(clp_usage_selector_list_user_extensions "${user}" "${selector_version}" || true)"
+    printf '%s\t%s\n' "${user}" "${slot}" > "${meta_file}"
+    printf '%s\n' "${output}" > "${output_file}"
+}
+
+clp_usage_cleanup_probe_dir() {
+    local probe_dir="$1"
+    local file
+
+    shopt -s nullglob
+    for file in "${probe_dir}"/*.meta "${probe_dir}"/*.out; do
+        rm -f "${file}"
+    done
+    shopt -u nullglob
+    rmdir "${probe_dir}" 2>/dev/null || true
 }
 
 clp_usage_phalcon_modules_from_extensions() {
@@ -528,13 +605,66 @@ clp_usage_scan_bulk() {
     clp_usage_scan_bulk_output "${output}" "" "${module_filter}"
 }
 
+clp_usage_scan_probe_dir() {
+    local probe_dir="$1"
+    local module_filter="$2"
+    local meta_file output_file user slot output
+
+    shopt -s nullglob
+    for meta_file in "${probe_dir}"/*.meta; do
+        output_file="${meta_file%.meta}.out"
+        [[ -f "${output_file}" ]] || continue
+        IFS=$'\t' read -r user slot < "${meta_file}" || true
+        output="$(<"${output_file}")"
+        if [[ -z "${output}" ]]; then
+            CLP_USAGE_EXTENSION_EMPTY_RESULTS=$((CLP_USAGE_EXTENSION_EMPTY_RESULTS + 1))
+            continue
+        fi
+        clp_usage_scan_user_extension_output "${user}" "${slot}" "${output}" "${module_filter}"
+    done
+    shopt -u nullglob
+}
+
+clp_usage_scan_list_user_extensions_parallel() {
+    local module_filter="$1"
+    local usage_jobs="$2"
+    shift 2
+    local -a slots=("$@")
+    local probe_dir user slot selector_version job_id meta_file output_file
+    local job_count=0
+
+    probe_dir="$(mktemp -d "${TMPDIR:-/tmp}/clp-usage.XXXXXX")" || return 1
+
+    for user in "${!CLP_USAGE_SELECTED_USERS[@]}"; do
+        for slot in "${slots[@]}"; do
+            selector_version="$(clp_usage_selector_version_for_slot "${slot}")" || continue
+            job_count=$((job_count + 1))
+            printf -v job_id '%06d' "${job_count}"
+            meta_file="${probe_dir}/${job_id}.meta"
+            output_file="${probe_dir}/${job_id}.out"
+            clp_usage_wait_for_job_capacity "${usage_jobs}"
+            clp_usage_probe_user_slot_to_files "${user}" "${slot}" "${selector_version}" "${meta_file}" "${output_file}" &
+        done
+    done
+
+    wait || true
+    clp_usage_scan_probe_dir "${probe_dir}" "${module_filter}"
+    clp_usage_cleanup_probe_dir "${probe_dir}"
+}
+
 clp_usage_scan_list_user_extensions() {
     local module_filter="$1"
-    shift
+    local usage_jobs="$2"
+    shift 2
     local -a slots=("$@")
     local user slot selector_version output before_matches
 
     if ((${#slots[@]} > 0)); then
+        if ((usage_jobs > 1)); then
+            clp_usage_scan_list_user_extensions_parallel "${module_filter}" "${usage_jobs}" "${slots[@]}"
+            return 0
+        fi
+
         for user in "${!CLP_USAGE_SELECTED_USERS[@]}"; do
             for slot in "${slots[@]}"; do
                 selector_version="$(clp_usage_selector_version_for_slot "${slot}")" || continue
@@ -608,6 +738,7 @@ clp_cmd_usage() {
     local user_filter=""
     local all_php=0
     local current_only=0
+    local usage_jobs="${CLP_USAGE_JOBS:-8}"
     local probe_users=0
     local -a users=()
     local -a slots=()
@@ -647,6 +778,14 @@ clp_cmd_usage() {
                 current_only=1
                 shift
                 ;;
+            --jobs)
+                usage_jobs="$2"
+                shift 2
+                ;;
+            --jobs=*)
+                usage_jobs="${1#--jobs=}"
+                shift
+                ;;
             --probe-users)
                 probe_users=1
                 shift
@@ -662,6 +801,7 @@ clp_cmd_usage() {
     done
 
     command -v selectorctl >/dev/null 2>&1 || clp_die "Missing required command: selectorctl"
+    usage_jobs="$(clp_usage_normalize_jobs "${usage_jobs}")"
 
     if [[ -n "${user_filter}" ]]; then
         while IFS= read -r user; do
@@ -697,6 +837,7 @@ clp_cmd_usage() {
     printf 'users: %s\n' "${#users[@]}"
     if [[ -n "${php_filter}" || "${all_php}" == "1" || "${current_only}" != "1" ]]; then
         printf 'slots: %s\n' "$(clp_join_by ', ' "${slots[@]}")"
+        printf 'jobs: %s\n' "${usage_jobs}"
     else
         printf 'slots: current PHP Selector version per user\n'
     fi
@@ -705,7 +846,7 @@ clp_cmd_usage() {
 
     clp_usage_scan_bulk "${module_filter}" "${slots[@]}" || true
     if [[ "${CLP_USAGE_BULK_MATCHES}" == "0" ]]; then
-        clp_usage_scan_list_user_extensions "${module_filter}" "${slots[@]}"
+        clp_usage_scan_list_user_extensions "${module_filter}" "${usage_jobs}" "${slots[@]}"
     fi
 
     if [[ "${CLP_USAGE_BULK_MATCHES}" == "0" ]]; then
