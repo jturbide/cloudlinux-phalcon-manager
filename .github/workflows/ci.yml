@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  test:
+    name: Bash checks and Bats
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats jq shellcheck
+
+      - name: Bash syntax
+        run: bash -n bin/cl-phalcon lib/*.sh
+
+      - name: ShellCheck
+        run: shellcheck bin/cl-phalcon lib/*.sh tests/*.bats examples/*.sh
+
+      - name: Bats
+        run: bats tests
+
+      - name: Whitespace
+        run: git diff --check
+
+      - name: Makefile check target
+        run: make check

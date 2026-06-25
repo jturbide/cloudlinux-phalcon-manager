@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CLP_BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLP_PROJECT_DIR="$(cd "${CLP_BIN_DIR}/.." && pwd)"
+CLP_LIB_DIR="${CLP_LIB_DIR:-}"
+
+if [[ -z "${CLP_LIB_DIR}" ]]; then
+    if [[ -f "${CLP_PROJECT_DIR}/lib/common.sh" ]]; then
+        CLP_LIB_DIR="${CLP_PROJECT_DIR}/lib"
+    elif [[ -f "/usr/local/lib/cloudlinux-phalcon-manager/lib/common.sh" ]]; then
+        CLP_LIB_DIR="/usr/local/lib/cloudlinux-phalcon-manager/lib"
+    else
+        printf 'ERROR: could not find cloudlinux-phalcon-manager libraries. Set CLP_LIB_DIR.\n' >&2
+        exit 1
+    fi
+fi
+
+# shellcheck source=../lib/common.sh
+source "${CLP_LIB_DIR}/common.sh"
+# shellcheck source=../lib/metadata.sh
+source "${CLP_LIB_DIR}/metadata.sh"
+# shellcheck source=../lib/detect.sh
+source "${CLP_LIB_DIR}/detect.sh"
+# shellcheck source=../lib/build.sh
+source "${CLP_LIB_DIR}/build.sh"
+# shellcheck source=../lib/conflicts.sh
+source "${CLP_LIB_DIR}/conflicts.sh"
+# shellcheck source=../lib/validate.sh
+source "${CLP_LIB_DIR}/validate.sh"
+# shellcheck source=../lib/doctor.sh
+source "${CLP_LIB_DIR}/doctor.sh"
+# shellcheck source=../lib/install.sh
+source "${CLP_LIB_DIR}/install.sh"
+
+clp_usage() {
+    cat <<'USAGE'
+cl-phalcon - CloudLinux alt-php Phalcon extension manager
+
+Usage:
+  cl-phalcon [--dry-run] [--yes] <command> [options]
+
+Commands:
+  list
+  doctor
+  detect
+  install --php php85 --phalcon 5.14.2 [--module phalcon514]
+  install --php php82,php83 --phalcon 5.9.3
+  install --all-php --phalcon 5.16.0
+  install --php php74 --phalcon 4.1.x --module phalcon4 [--no-default-dependencies]
+  reinstall --php php85 --module phalcon514
+  remove --php php85 --module phalcon514
+  validate [--php php85] [--module phalcon514]
+  update [--php php85] [--module phalcon514]
+  upgrade --php php85 --phalcon 5.16.0 [--module phalcon516]
+  upgrade --all-managed --phalcon 5.16.0
+  rebuild-needed [--apply] [--php php85] [--module phalcon514]
+  rebuild-all-needed [--apply]
+  conflicts
+  cagefs-rebuild
+
+Global options:
+  --dry-run       Print intended changes without writing files or running builds.
+  --yes, -y       Assume yes for replacement/removal prompts.
+  --version       Print tool version.
+  --help, -h      Show this help.
+USAGE
+}
+
+clp_parse_global_option() {
+    case "${1:-}" in
+        --dry-run)
+            CLP_DRY_RUN=1
+            return 0
+            ;;
+        --yes|-y)
+            CLP_YES=1
+            return 0
+            ;;
+        --help|-h)
+            clp_usage
+            exit 0
+            ;;
+        --version)
+            printf '%s\n' "${CLP_TOOL_VERSION}"
+            exit 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+while (($# > 0)); do
+    if clp_parse_global_option "$1"; then
+        shift
+        continue
+    fi
+    break
+done
+
+command_name="${1:-help}"
+if (($# > 0)); then
+    shift
+fi
+
+case "${command_name}" in
+    help|--help|-h)
+        clp_usage
+        ;;
+    list)
+        clp_require_root
+        clp_cmd_list "$@"
+        ;;
+    doctor)
+        clp_cmd_doctor "$@"
+        ;;
+    detect)
+        clp_require_root
+        clp_cmd_detect "$@"
+        ;;
+    install)
+        clp_require_root
+        clp_cmd_install "$@"
+        ;;
+    reinstall)
+        clp_require_root
+        clp_cmd_reinstall "$@"
+        ;;
+    remove)
+        clp_require_root
+        clp_cmd_remove "$@"
+        ;;
+    validate)
+        clp_require_root
+        clp_cmd_validate "$@"
+        ;;
+    update)
+        clp_require_root
+        clp_cmd_update "$@"
+        ;;
+    upgrade)
+        clp_require_root
+        clp_cmd_upgrade "$@"
+        ;;
+    rebuild-needed)
+        clp_require_root
+        clp_cmd_rebuild_needed "$@"
+        ;;
+    rebuild-all-needed)
+        clp_require_root
+        clp_cmd_rebuild_needed --all "$@"
+        ;;
+    conflicts)
+        clp_require_root
+        clp_cmd_conflicts "$@"
+        ;;
+    cagefs-rebuild)
+        clp_require_root
+        clp_cmd_cagefs_rebuild "$@"
+        ;;
+    *)
+        clp_die "Unknown command: ${command_name}"
+        ;;
+esac
