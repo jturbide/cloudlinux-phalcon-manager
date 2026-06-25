@@ -10,7 +10,7 @@ cl-phalcon install \
   --php php80 \
   --phalcon 4.2.x \
   --git-ref 4.2.x \
-  --module phalcon4 \
+  --module phalcon42 \
   --yes
 
 cl-phalcon install \

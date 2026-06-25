@@ -22,7 +22,7 @@ Generated Phalcon 4 ini example:
 ; Managed by cloudlinux-phalcon-manager. Do not edit by hand.
 extension=psr.so
 extension=pdo.so
-extension=phalcon4.so
+extension=phalcon41.so
 ```
 
 Generated Phalcon 5 ini example:
@@ -60,7 +60,7 @@ not included by default because:
 Use the default for a Phalcon 4 install:
 
 ```bash
-cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
+cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon41 --yes
 ```
 
 Force the older manual dependency order:
@@ -70,7 +70,7 @@ cl-phalcon install \
   --php php74 \
   --phalcon 4.1.x \
   --git-ref 4.1.x \
-  --module phalcon4 \
+  --module phalcon41 \
   --dependencies psr,pdo,json \
   --yes
 ```
@@ -83,7 +83,7 @@ cl-phalcon install \
   --php php74 \
   --phalcon 4.1.x \
   --git-ref 4.1.x \
-  --module phalcon4 \
+  --module phalcon41 \
   --no-default-dependencies \
   --yes
 ```

@@ -11,7 +11,7 @@ cl-phalcon install \
   --php php74 \
   --phalcon 4.1.x \
   --git-ref 4.1.x \
-  --module phalcon4 \
+  --module phalcon41 \
   --yes
 
 cl-phalcon install \

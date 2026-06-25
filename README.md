@@ -173,6 +173,9 @@ cl-phalcon doctor
 # Inventory official RPMs, unmanaged Phalcon files, and managed modules.
 cl-phalcon foreign
 
+# Count Phalcon modules enabled by PHP Selector accounts and list domains.
+cl-phalcon usage
+
 # Detect CloudLinux alt-php slots and their PHP ABI/build metadata.
 cl-phalcon detect
 
@@ -238,6 +241,27 @@ The command is read-only. It reports:
   managed module.
 - `INI_FILE FOREIGN` for Phalcon selector ini files not tracked by metadata.
 
+## Selector Usage
+
+Use `usage` when you want to see which Phalcon modules are enabled by PHP
+Selector accounts, how many accounts selected each module, and which domains
+belong to those accounts.
+
+```bash
+cl-phalcon usage
+cl-phalcon usage --php php85
+cl-phalcon usage --php php85 --module phalcon516
+cl-phalcon usage --user accountname
+```
+
+By default, `usage` asks `selectorctl` for each cPanel account's current PHP
+Selector version, then reports enabled Phalcon extensions for that current
+version. Use `--php php85` to audit a specific alt-php slot for all accounts,
+or `--all-php` to query every detected alt-php slot for every account.
+
+This command reports PHP Selector enablement. It does not prove whether an
+application's PHP code actively imports or executes Phalcon classes.
+
 ## Real-world Workflows
 
 See [docs/compatibility-grid.md](docs/compatibility-grid.md) for the usual
@@ -275,13 +299,16 @@ Install an older Phalcon 4 build for a legacy PHP 7.4 application:
 cl-phalcon install \
   --php php74 \
   --phalcon 4.1.3 \
-  --module phalcon4 \
+  --module phalcon41 \
   --yes
 ```
 
 For Phalcon 4, the generated ini loads `psr.so` and `pdo.so` before
-`phalcon4.so` by default. For Phalcon 5, it loads `pdo.so` before the versioned
-Phalcon module. Use `--dependencies` only when you want a custom load order.
+the selected Phalcon module by default. Custom Phalcon 4 examples use
+minor-specific module names such as `phalcon41.so` and `phalcon42.so` so they
+are clearly distinct from CloudLinux's official `phalcon4` package. For Phalcon
+5, it loads `pdo.so` before the versioned Phalcon module. Use `--dependencies`
+only when you want a custom load order.
 
 After CloudLinux updates alt-php packages, preview whether anything actually
 needs a rebuild:
@@ -421,16 +448,22 @@ cl-phalcon install --php php85 --phalcon 5.14.2 --full-patch-module --yes
 
 That produces `phalcon5142.so`.
 
+Default module names use major/minor version digits. For example, Phalcon
+`4.1.x` defaults to `phalcon41`, Phalcon `4.2.x` defaults to `phalcon42`,
+Phalcon `5.9.3` defaults to `phalcon59`, and Phalcon `5.16.0` defaults to
+`phalcon516`. Use `--module` only when you want a specific selector name or
+when adopting an existing manual install.
+
 Use a branch or non-default git ref:
 
 ```bash
-cl-phalcon install --php php80 --phalcon 4.2.x --git-ref 4.2.x --module phalcon4 --yes
+cl-phalcon install --php php80 --phalcon 4.2.x --git-ref 4.2.x --module phalcon42 --yes
 ```
 
 Phalcon 4 ini dependencies are applied automatically:
 
 ```bash
-cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
+cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon41 --yes
 ```
 
 That writes:
@@ -438,7 +471,7 @@ That writes:
 ```ini
 extension=psr.so
 extension=pdo.so
-extension=phalcon4.so
+extension=phalcon41.so
 ```
 
 Override the generated ini dependency order when a legacy server needs it:
@@ -447,7 +480,7 @@ Override the generated ini dependency order when a legacy server needs it:
 cl-phalcon install \
   --php php74 \
   --phalcon 4.1.3 \
-  --module phalcon4 \
+  --module phalcon41 \
   --dependencies psr,pdo,json \
   --yes
 ```
@@ -460,7 +493,7 @@ cl-phalcon install \
   --php php74 \
   --phalcon 4.1.x \
   --git-ref 4.1.x \
-  --module phalcon4 \
+  --module phalcon41 \
   --no-default-dependencies \
   --yes
 ```
@@ -557,7 +590,7 @@ managed Phalcon module names conflict with each other.
 Default managed names include:
 
 ```text
-phalcon phalcon2 phalcon3 phalcon4 phalcon5 phalcon51 phalcon52 phalcon53
+phalcon phalcon2 phalcon3 phalcon4 phalcon41 phalcon42 phalcon5 phalcon51 phalcon52 phalcon53
 phalcon54 phalcon55 phalcon56 phalcon57 phalcon58 phalcon59 phalcon513
 phalcon514 phalcon515 phalcon516
 ```
@@ -592,7 +625,7 @@ The block uses CloudLinux's native comma-separated conflict-group syntax, for
 example:
 
 ```text
-phalcon, phalcon2, phalcon3, phalcon4, phalcon5, phalcon59, phalcon516
+phalcon, phalcon2, phalcon3, phalcon4, phalcon41, phalcon42, phalcon5, phalcon59, phalcon516
 ```
 
 This tool does not uninstall CloudLinux's official Phalcon RPMs. It coexists

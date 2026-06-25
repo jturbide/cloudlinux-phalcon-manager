@@ -6,10 +6,10 @@ slots. Review them before running on a production server.
 Recommended individual-slot examples:
 
 ```text
-install-php72.sh  PHP 7.2: Phalcon 3 and Phalcon 4 from 4.1.x
-install-php73.sh  PHP 7.3: Phalcon 3 and Phalcon 4 from 4.1.x
-install-php74.sh  PHP 7.4: Phalcon 4 from 4.1.x and pinned Phalcon 5.9.3
-install-php80.sh  PHP 8.0: Phalcon 4 from 4.2.x and pinned Phalcon 5.9.3
+install-php72.sh  PHP 7.2: Phalcon 3 and custom phalcon41 from 4.1.x
+install-php73.sh  PHP 7.3: Phalcon 3 and custom phalcon41 from 4.1.x
+install-php74.sh  PHP 7.4: custom phalcon41 from 4.1.x and pinned phalcon59
+install-php80.sh  PHP 8.0: custom phalcon42 from 4.2.x and pinned phalcon59
 install-php81.sh  PHP 8.1: pinned Phalcon 5.9.3
 install-php82.sh  PHP 8.2: pinned Phalcon 5.9.3
 install-php83.sh  PHP 8.3: pinned Phalcon 5.9.3
@@ -36,6 +36,11 @@ Phalcon 4 examples rely on the tool's default `psr,pdo` INI dependencies.
 Phalcon 5 examples rely on the default `pdo` dependency. See
 `../docs/dependencies.md` before adding legacy `psr,pdo,json` load-order
 overrides.
+
+Custom Phalcon 4 examples use minor-specific module names: `phalcon41` for the
+4.1.x branch and `phalcon42` for the 4.2.x branch. The official CloudLinux RPM
+name `phalcon4` remains reserved for CloudLinux's own selector package unless
+you explicitly choose to adopt an existing manual install with that name.
 
 Legacy or custom examples:
 

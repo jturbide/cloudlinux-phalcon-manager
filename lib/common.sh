@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-CLP_TOOL_VERSION="${CLP_TOOL_VERSION:-0.1.0}"
+CLP_TOOL_VERSION="${CLP_TOOL_VERSION:-0.2.0}"
 CLP_GITHUB_REPO="${CLP_GITHUB_REPO:-https://github.com/phalcon/cphalcon.git}"
 CLP_DEFAULT_CFLAGS="${CLP_DEFAULT_CFLAGS:--march=native -O2 -fomit-frame-pointer}"
 
@@ -33,6 +33,8 @@ clp_rooted_path() {
 : "${CLP_SRC_DIR:=$(clp_rooted_path /usr/local/src/cloudlinux-phalcon-manager/src)}"
 : "${CLP_BUILD_DIR:=$(clp_rooted_path /usr/local/src/cloudlinux-phalcon-manager/build)}"
 : "${CLP_CACHE_DIR:=$(clp_rooted_path /usr/local/src/cloudlinux-phalcon-manager/cache)}"
+: "${CLP_CPANEL_USERS_DIR:=$(clp_rooted_path /var/cpanel/users)}"
+: "${CLP_USERDOMAINS_FILE:=$(clp_rooted_path /etc/userdomains)}"
 
 CLP_METADATA_FILE="${CLP_STATE_DIR}/installs.json"
 
@@ -196,11 +198,6 @@ clp_phalcon_default_module_base() {
     if [[ "${full_patch}" == "1" ]]; then
         [[ -n "${patch:-}" ]] || clp_die "--full-patch-module requires a patch version."
         printf 'phalcon%s%s%s\n' "${major}" "${minor}" "${patch}"
-        return
-    fi
-
-    if [[ "${major}" == "4" ]]; then
-        printf 'phalcon4\n'
         return
     fi
 

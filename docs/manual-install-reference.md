@@ -7,11 +7,15 @@ The managed CLI is the recommended path for normal use because it stores
 metadata, validates modules, updates conflicts idempotently, and avoids
 overwriting CloudLinux's official `phalcon.so`.
 
-Some old manual examples load `psr.so`, `pdo.so`, and `json.so` before
-`phalcon4.so`. The CLI uses a narrower version-aware default: Phalcon 4 loads
-`psr.so` and `pdo.so` automatically, and Phalcon 5 loads `pdo.so`
-automatically. JSON remains an explicit override when a legacy server needs
-that exact manual load order. See `docs/dependencies.md`.
+Some old manual examples load `psr.so`, `pdo.so`, and `json.so`. The CLI uses a
+narrower version-aware default: Phalcon 4 loads `psr.so` and `pdo.so`
+automatically, and Phalcon 5 loads `pdo.so` automatically. JSON remains an
+explicit override when a legacy server needs that exact manual load order. See
+`docs/dependencies.md`.
+
+For custom Phalcon 4 builds, prefer minor-specific module names such as
+`phalcon41.so` for 4.1.x and `phalcon42.so` for 4.2.x. That keeps custom builds
+visually distinct from CloudLinux's official `phalcon4` selector package.
 
 ```bash
 # --------------------------------------------------------
@@ -26,18 +30,18 @@ export CFLAGS="-march=native -O2 -fomit-frame-pointer"
 --php-config /opt/alt/php74/usr/bin/php-config
 ;
 
-mv /opt/alt/php74/usr/lib64/php/modules/phalcon.so /opt/alt/php74/usr/lib64/php/modules/phalcon4.so;
-chown root:linksafe /opt/alt/php74/usr/lib64/php/modules/phalcon4.so;
-ls -la /opt/alt/php74/usr/lib64/php/modules/phalcon4.so;
+mv /opt/alt/php74/usr/lib64/php/modules/phalcon.so /opt/alt/php74/usr/lib64/php/modules/phalcon41.so;
+chown root:linksafe /opt/alt/php74/usr/lib64/php/modules/phalcon41.so;
+ls -la /opt/alt/php74/usr/lib64/php/modules/phalcon41.so;
 
-# Add phalcon4.ini to load phalcon4.so
+# Add phalcon41.ini to load phalcon41.so
 echo "
-;Enable phalcon4 extension module
+;Enable phalcon41 extension module
 extension=psr.so
 extension=pdo.so
 extension=json.so
-extension=phalcon4.so
-" > /opt/alt/php74/etc/php.d.all/phalcon4.ini
+extension=phalcon41.so
+" > /opt/alt/php74/etc/php.d.all/phalcon41.ini
 
 # Add conflicting versions
 # phalcon, phalcon2, phalcon3, phalcon5, phalcon51, phalcon52, phalcon53, phalcon54, phalcon55, phalcon56
@@ -59,18 +63,18 @@ export CFLAGS="-march=native -O2 -fomit-frame-pointer"
 --php-config /opt/alt/php80/usr/bin/php-config
 ;
 
-mv /opt/alt/php80/usr/lib64/php/modules/phalcon.so /opt/alt/php80/usr/lib64/php/modules/phalcon4.so;
-chown root:linksafe /opt/alt/php80/usr/lib64/php/modules/phalcon4.so;
-ls -la /opt/alt/php80/usr/lib64/php/modules/phalcon4.so;
+mv /opt/alt/php80/usr/lib64/php/modules/phalcon.so /opt/alt/php80/usr/lib64/php/modules/phalcon42.so;
+chown root:linksafe /opt/alt/php80/usr/lib64/php/modules/phalcon42.so;
+ls -la /opt/alt/php80/usr/lib64/php/modules/phalcon42.so;
 
-# Add phalcon4.ini to load phalcon4.so
+# Add phalcon42.ini to load phalcon42.so
 echo "
-;Enable phalcon4 extension module
+;Enable phalcon42 extension module
 extension=psr.so
 extension=pdo.so
 extension=json.so
-extension=phalcon4.so
-" > /opt/alt/php80/etc/php.d.all/phalcon4.ini
+extension=phalcon42.so
+" > /opt/alt/php80/etc/php.d.all/phalcon42.ini
 
 # Add conflicting versions
 # phalcon, phalcon2, phalcon3, phalcon5, phalcon51, phalcon52, phalcon53, phalcon54, phalcon55, phalcon56

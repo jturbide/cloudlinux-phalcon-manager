@@ -41,13 +41,14 @@ official `phalcon5` package has moved to a newer framework behavior.
 cl-phalcon install \
   --php php74 \
   --phalcon 4.1.3 \
-  --module phalcon4 \
+  --module phalcon41 \
   --yes
 ```
 
 For Phalcon 4, `cl-phalcon` writes `extension=psr.so` and `extension=pdo.so`
-before `extension=phalcon4.so` by default. Use `--dependencies psr,pdo,json`
-only when you intentionally want the older manual load order.
+before the selected module, such as `extension=phalcon41.so`, by default. Use
+`--dependencies psr,pdo,json` only when you intentionally want the older manual
+load order.
 
 ## After a CloudLinux alt-php Update
 

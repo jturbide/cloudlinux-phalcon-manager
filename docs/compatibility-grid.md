@@ -11,10 +11,10 @@ need Phalcon 3 or 4 while newer applications should use Phalcon 5.
 
 | CloudLinux slot | PHP family | Usually wanted Phalcon modules | Notes |
 | --- | --- | --- | --- |
-| `php72` | PHP 7.2 | `phalcon3`, `phalcon4` | Use Phalcon `v3.4.5` for legacy apps. Use Phalcon 4 from `4.1.x`. |
-| `php73` | PHP 7.3 | `phalcon3`, `phalcon4` | Same as PHP 7.2. |
-| `php74` | PHP 7.4 | `phalcon4`, `phalcon59` | Phalcon 4 from `4.1.x`; Phalcon 5.9.3 for older Phalcon 5 apps pinned before later framework changes. |
-| `php80` | PHP 8.0 | `phalcon4`, `phalcon59` | Transition slot. Phalcon 4 must come from `4.2.x`; earlier PHP slots use `4.1.x`. |
+| `php72` | PHP 7.2 | `phalcon3`, `phalcon41` | Use Phalcon `v3.4.5` for legacy apps. Use custom Phalcon 4 from `4.1.x` only when the official `phalcon4` RPM is not acceptable. |
+| `php73` | PHP 7.3 | `phalcon3`, `phalcon41` | Same as PHP 7.2. |
+| `php74` | PHP 7.4 | `phalcon41`, `phalcon59` | Phalcon 4 from `4.1.x`; Phalcon 5.9.3 for older Phalcon 5 apps pinned before later framework changes. |
+| `php80` | PHP 8.0 | `phalcon42`, `phalcon59` | Transition slot. Phalcon 4 must come from `4.2.x`; earlier PHP slots use `4.1.x`. |
 | `php81` | PHP 8.1 | `phalcon59` | Compatibility pin for older Phalcon 5 projects. |
 | `php82` | PHP 8.2 | `phalcon59` | Compatibility pin for older Phalcon 5 projects. |
 | `php83` | PHP 8.3 | `phalcon59` | Compatibility pin for older Phalcon 5 projects. |
@@ -70,9 +70,11 @@ PHP 8.0 is the transition slot:
 - For PHP 7.2, 7.3, and 7.4 Phalcon 4 installs, use the `4.1.x` branch.
 - After PHP 8.0, do not recommend Phalcon below 5.
 - Phalcon 4 installs automatically write `extension=psr.so` and
-  `extension=pdo.so` before `extension=phalcon4.so`. Phalcon 5 installs write
-  `extension=pdo.so` before the versioned module. See `docs/dependencies.md`
-  for the dependency matrix and override examples.
+  `extension=pdo.so` before the selected custom module. Use `phalcon41` for
+  4.1.x custom builds and `phalcon42` for 4.2.x custom builds, keeping the
+  official CloudLinux `phalcon4` name visually distinct. Phalcon 5 installs
+  write `extension=pdo.so` before the versioned module. See
+  `docs/dependencies.md` for the dependency matrix and override examples.
 
 ## Example Commands
 
@@ -96,21 +98,21 @@ Legacy PHP 7.2 and 7.3 apps:
 # Prefer official alt-php72/73 Phalcon 3 and 4 packages when acceptable.
 # Uncomment only when a custom upstream build is required.
 # cl-phalcon install --php php72,php73 --phalcon 3.4.5 --git-ref v3.4.5 --module phalcon3 --yes
-# cl-phalcon install --php php72,php73 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
+# cl-phalcon install --php php72,php73 --phalcon 4.1.x --git-ref 4.1.x --module phalcon41 --yes
 ```
 
 PHP 7.4:
 
 ```bash
 # Prefer official alt-php74-phalcon4 when acceptable.
-# cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
+# cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon41 --yes
 cl-phalcon install --php php74 --phalcon 5.9.3 --module phalcon59 --yes
 ```
 
 PHP 8.0 transition slot:
 
 ```bash
-cl-phalcon install --php php80 --phalcon 4.2.x --git-ref 4.2.x --module phalcon4 --yes
+cl-phalcon install --php php80 --phalcon 4.2.x --git-ref 4.2.x --module phalcon42 --yes
 cl-phalcon install --php php80 --phalcon 5.9.3 --module phalcon59 --yes
 ```
 

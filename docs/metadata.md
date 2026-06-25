@@ -33,7 +33,7 @@ The file uses this shape:
       "debug_build": "no",
       "source_checkout_path": "/usr/local/src/cloudlinux-phalcon-manager/src/cphalcon-v5.14.2",
       "build_time": "2026-06-25T00:00:00Z",
-      "installed_by_tool_version": "0.1.0",
+      "installed_by_tool_version": "0.2.0",
       "sha256": "...",
       "ini_dependencies": []
     }

@@ -16,6 +16,8 @@ phalcon
 phalcon2
 phalcon3
 phalcon4
+phalcon41
+phalcon42
 phalcon5
 phalcon51
 phalcon52

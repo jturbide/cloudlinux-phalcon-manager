@@ -14,16 +14,16 @@ set -Eeuo pipefail
 # Uncomment only when you need a specific upstream build instead of the official
 # package.
 # cl-phalcon install --php php72,php73 --phalcon 3.4.5 --git-ref v3.4.5 --module phalcon3 --yes
-# cl-phalcon install --php php72,php73 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
+# cl-phalcon install --php php72,php73 --phalcon 4.1.x --git-ref 4.1.x --module phalcon41 --yes
 
 # PHP 7.4: Phalcon 4 from 4.1.x plus the pinned Phalcon 5.9.3 compatibility module.
 # CloudLinux provides alt-php74-phalcon4, so only build custom Phalcon 4 when
 # the official package is not acceptable for that host.
-# cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon4 --yes
+# cl-phalcon install --php php74 --phalcon 4.1.x --git-ref 4.1.x --module phalcon41 --yes
 cl-phalcon install --php php74 --phalcon 5.9.3 --module phalcon59 --yes
 
 # PHP 8.0 transition: Phalcon 4 must use 4.2.x; Phalcon 5.9.3 is pinned for older projects.
-cl-phalcon install --php php80 --phalcon 4.2.x --git-ref 4.2.x --module phalcon4 --yes
+cl-phalcon install --php php80 --phalcon 4.2.x --git-ref 4.2.x --module phalcon42 --yes
 cl-phalcon install --php php80 --phalcon 5.9.3 --module phalcon59 --yes
 
 # PHP 8.1 through 8.4: Phalcon 5.9.3 compatibility pin.

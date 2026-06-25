@@ -27,7 +27,11 @@ setup() {
 
   run bash -c 'source lib/common.sh; clp_phalcon_default_module_base 4.1.3 0'
   [ "$status" -eq 0 ]
-  [ "$output" = "phalcon4" ]
+  [ "$output" = "phalcon41" ]
+
+  run bash -c 'source lib/common.sh; clp_phalcon_default_module_base 4.2.x 0'
+  [ "$status" -eq 0 ]
+  [ "$output" = "phalcon42" ]
 }
 
 @test "ini dependency defaults are version-aware" {

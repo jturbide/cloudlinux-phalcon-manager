@@ -32,6 +32,8 @@ source "${CLP_LIB_DIR}/validate.sh"
 source "${CLP_LIB_DIR}/doctor.sh"
 # shellcheck source=lib/foreign.sh
 source "${CLP_LIB_DIR}/foreign.sh"
+# shellcheck source=lib/usage.sh
+source "${CLP_LIB_DIR}/usage.sh"
 # shellcheck source=lib/install.sh
 source "${CLP_LIB_DIR}/install.sh"
 
@@ -46,11 +48,12 @@ Commands:
   list
   doctor
   foreign [--php php85] [--include-internal]
+  usage [--php php85] [--module phalcon516] [--user account]
   detect [--include-internal]
   install --php php85 --phalcon 5.14.2 [--module phalcon514]
   install --php php82,php83 --phalcon 5.9.3
   install --all-php --phalcon 5.16.0
-  install --php php74 --phalcon 4.1.x --module phalcon4 [--no-default-dependencies]
+  install --php php74 --phalcon 4.1.x --module phalcon41 [--no-default-dependencies]
   reinstall --php php85 --module phalcon514
   remove --php php85 --module phalcon514
   validate [--php php85] [--module phalcon514]
@@ -121,6 +124,10 @@ case "${command_name}" in
     foreign)
         clp_require_root
         clp_cmd_foreign "$@"
+        ;;
+    usage|selector-usage)
+        clp_require_root
+        clp_cmd_usage "$@"
         ;;
     detect)
         clp_require_root

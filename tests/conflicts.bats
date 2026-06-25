@@ -41,6 +41,12 @@ EOF
   run grep -F "phalcon, phalcon2, phalcon3, phalcon4" "${CLP_SELECTOR_CONFLICTS}"
   [ "$status" -eq 0 ]
 
+  run grep -F "phalcon41" "${CLP_SELECTOR_CONFLICTS}"
+  [ "$status" -eq 0 ]
+
+  run grep -F "phalcon42" "${CLP_SELECTOR_CONFLICTS}"
+  [ "$status" -eq 0 ]
+
   run grep -F "phalcon599" "${CLP_SELECTOR_CONFLICTS}"
   [ "$status" -eq 0 ]
 
