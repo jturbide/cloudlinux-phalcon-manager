@@ -164,18 +164,43 @@ CloudLinux PHP package updates, use `cl-phalcon rebuild-needed` or
 ## Commands
 
 ```bash
+# Show Phalcon modules already managed by this tool from metadata.
 cl-phalcon list
+
+# Run environment checks before installing or troubleshooting modules.
 cl-phalcon doctor
+
+# Detect CloudLinux alt-php slots and their PHP ABI/build metadata.
 cl-phalcon detect
+
+# Compile and install a Phalcon version for one or more alt-php slots.
 cl-phalcon install
+
+# Rebuild and replace an existing managed module using its stored metadata.
 cl-phalcon reinstall
+
+# Remove a managed module, its selector ini, and its metadata entry.
 cl-phalcon remove
+
+# Verify module files, ownership, ini load order, and PHP runtime loading.
 cl-phalcon validate
+
+# Rebuild only managed modules that currently need rebuilding.
 cl-phalcon update
+
+# Install a newer Phalcon version while keeping the old module available.
 cl-phalcon upgrade
+
+# Report whether one managed module needs a rebuild and why.
 cl-phalcon rebuild-needed
+
+# Report whether any managed modules need rebuilds, optionally applying them.
 cl-phalcon rebuild-all-needed
+
+# Update PHP Selector conflicts so only one Phalcon module can be enabled.
 cl-phalcon conflicts
+
+# Rebuild CloudLinux CageFS/PHP Selector alt-php ini state.
 cl-phalcon cagefs-rebuild
 ```
 

@@ -52,8 +52,8 @@ clp_metadata_get() {
     clp_metadata_require_jq
     [[ -f "${CLP_METADATA_FILE}" ]] || return 1
 
-    jq -e --arg slot "${php_slot}" --arg module "${module_name}" \
-        '.installs[] | select(.php_slot == $slot and .module_name == $module)' \
+    jq -e --arg slot "${php_slot}" --arg wanted_module "${module_name}" \
+        '.installs[] | select(.php_slot == $slot and .module_name == $wanted_module)' \
         "${CLP_METADATA_FILE}"
 }
 
@@ -69,10 +69,10 @@ clp_metadata_select() {
         module_name="${module_base%.so}.so"
     fi
 
-    jq -c --arg slot "${php_slot}" --arg module "${module_name}" '
+    jq -c --arg slot "${php_slot}" --arg wanted_module "${module_name}" '
         .installs[]
         | select(($slot == "" or .php_slot == $slot)
-          and ($module == "" or .module_name == $module))
+          and ($wanted_module == "" or .module_name == $wanted_module))
     ' "${CLP_METADATA_FILE}"
 }
 
@@ -117,9 +117,9 @@ clp_metadata_remove() {
     local tmp
     tmp="$(mktemp "${CLP_STATE_DIR}/.installs.json.XXXXXX")"
 
-    jq --arg slot "${php_slot}" --arg module "${module_name}" --arg updated_at "$(clp_now_utc)" '
+    jq --arg slot "${php_slot}" --arg wanted_module "${module_name}" --arg updated_at "$(clp_now_utc)" '
         .updated_at = $updated_at
-        | .installs = [.installs[] | select(.php_slot != $slot or .module_name != $module)]
+        | .installs = [.installs[] | select(.php_slot != $slot or .module_name != $wanted_module)]
     ' "${CLP_METADATA_FILE}" > "${tmp}"
 
     mv -f "${tmp}" "${CLP_METADATA_FILE}"

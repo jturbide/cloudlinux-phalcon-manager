@@ -47,3 +47,27 @@ setup() {
   [ "$status" -eq 0 ]
   [ "$output" = "psr,pdo,json" ]
 }
+
+@test "metadata selection filters by module without using jq reserved words" {
+  cat > "${CLP_STATE_DIR}/installs.json" <<'EOF'
+{
+  "schema_version": 1,
+  "installs": [
+    {
+      "php_slot": "php85",
+      "module_name": "phalcon516.so"
+    },
+    {
+      "php_slot": "php84",
+      "module_name": "phalcon59.so"
+    }
+  ]
+}
+EOF
+
+  run bash -c 'source lib/common.sh; source lib/metadata.sh; clp_metadata_select php85 phalcon516'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"php_slot":"php85"'* ]]
+  [[ "$output" == *'"module_name":"phalcon516.so"'* ]]
+  [[ "$output" != *'"php_slot":"php84"'* ]]
+}
