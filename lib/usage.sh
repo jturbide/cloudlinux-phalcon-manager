@@ -8,6 +8,9 @@ declare -A CLP_USAGE_ACCOUNT_COUNTS=()
 declare -A CLP_USAGE_DOMAIN_COUNTS=()
 declare -A CLP_USAGE_USERS=()
 declare -A CLP_USAGE_DOMAINS=()
+CLP_USAGE_CURRENT_PROBE_FAILURES=0
+CLP_USAGE_EXTENSION_PROBE_FAILURES=0
+CLP_USAGE_EXTENSION_EMPTY_RESULTS=0
 
 clp_usage_load_managed_modules() {
     CLP_USAGE_MANAGED_MODULES=()
@@ -131,6 +134,14 @@ clp_usage_selector_current_slot() {
     local user="$1"
     local output
 
+    if output="$(selectorctl --user-current "--user=${user}" 2>/dev/null)"; then
+        clp_usage_slot_from_text "${output}" && return 0
+    fi
+
+    if output="$(selectorctl --user-current --user "${user}" 2>/dev/null)"; then
+        clp_usage_slot_from_text "${output}" && return 0
+    fi
+
     if output="$(selectorctl "--user-current=${user}" 2>/dev/null)"; then
         clp_usage_slot_from_text "${output}" && return 0
     fi
@@ -139,6 +150,7 @@ clp_usage_selector_current_slot() {
         clp_usage_slot_from_text "${output}" && return 0
     fi
 
+    CLP_USAGE_CURRENT_PROBE_FAILURES=$((CLP_USAGE_CURRENT_PROBE_FAILURES + 1))
     return 1
 }
 
@@ -146,8 +158,11 @@ clp_usage_selector_extensions() {
     local user="$1"
     local selector_version="$2"
 
+    selectorctl --user-extensions "--user=${user}" "--version=${selector_version}" 2>/dev/null && return 0
+    selectorctl --user-extensions --user "${user}" --version "${selector_version}" 2>/dev/null && return 0
     selectorctl "--user-extensions=${user}" "--version=${selector_version}" 2>/dev/null && return 0
     selectorctl --user-extensions "${user}" --version "${selector_version}" 2>/dev/null && return 0
+    CLP_USAGE_EXTENSION_PROBE_FAILURES=$((CLP_USAGE_EXTENSION_PROBE_FAILURES + 1))
     return 1
 }
 
@@ -204,6 +219,15 @@ clp_usage_print_summary() {
     if ((${#CLP_USAGE_SUMMARY_KEYS[@]} == 0)); then
         printf '%-14s %-8s %-8s %-14s %-9s %-8s %s\n' \
             "USAGE_SUMMARY" "NONE" "-" "-" "0" "0" "no Phalcon selector usage detected"
+        if ((CLP_USAGE_CURRENT_PROBE_FAILURES > 0 || CLP_USAGE_EXTENSION_PROBE_FAILURES > 0)); then
+            printf 'WARNING: selectorctl probe failures: current=%s extensions=%s\n' \
+                "${CLP_USAGE_CURRENT_PROBE_FAILURES}" \
+                "${CLP_USAGE_EXTENSION_PROBE_FAILURES}" >&2
+        fi
+        if ((CLP_USAGE_EXTENSION_EMPTY_RESULTS > 0)); then
+            printf 'NOTE: selectorctl returned no extension output for %s account/version probe(s).\n' \
+                "${CLP_USAGE_EXTENSION_EMPTY_RESULTS}" >&2
+        fi
         return 0
     fi
 
@@ -228,7 +252,10 @@ clp_usage_scan_user_slot() {
 
     selector_version="$(clp_usage_selector_version_for_slot "${slot}")" || return 0
     output="$(clp_usage_selector_extensions "${user}" "${selector_version}" || true)"
-    [[ -n "${output}" ]] || return 0
+    if [[ -z "${output}" ]]; then
+        CLP_USAGE_EXTENSION_EMPTY_RESULTS=$((CLP_USAGE_EXTENSION_EMPTY_RESULTS + 1))
+        return 0
+    fi
 
     domains_csv="$(clp_usage_domains_csv_for_user "${user}")"
 

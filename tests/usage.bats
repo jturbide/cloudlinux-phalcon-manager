@@ -58,21 +58,25 @@ version=""
 
 for arg in "$@"; do
   case "${arg}" in
-    --user-current=*)
-      user="${arg#--user-current=}"
-      case "${user}" in
-        alice|bob|carol) echo "Current PHP version: 8.5" ;;
-      esac
-      exit 0
-      ;;
-    --user-extensions=*)
-      user="${arg#--user-extensions=}"
+    --user=*)
+      user="${arg#--user=}"
       ;;
     --version=*)
       version="${arg#--version=}"
       ;;
   esac
 done
+
+if [[ "$1" == "--user-current" ]]; then
+  case "${user}" in
+    alice|bob|carol) echo "Current PHP version: 8.5" ;;
+  esac
+  exit 0
+fi
+
+if [[ "$1" != "--user-extensions" ]]; then
+  exit 1
+fi
 
 if [[ "${version}" != "8.5" ]]; then
   exit 0
