@@ -43,7 +43,7 @@ Usage:
 Commands:
   list
   doctor
-  detect
+  detect [--include-internal]
   install --php php85 --phalcon 5.14.2 [--module phalcon514]
   install --php php82,php83 --phalcon 5.9.3
   install --all-php --phalcon 5.16.0

@@ -20,16 +20,32 @@ clp_php_info_value() {
 }
 
 clp_detect_slot_names() {
+    local include_internal="${1:-${CLP_INCLUDE_INTERNAL_SLOTS:-0}}"
     local php_config
     local prefix
+    local slot
 
     shopt -s nullglob
     for php_config in "${CLP_OPT_ALT}"/php*/usr/bin/php-config; do
         [[ -x "${php_config}" ]] || continue
         prefix="${php_config%/usr/bin/php-config}"
-        basename "${prefix}"
+        slot="$(basename "${prefix}")"
+        if [[ "${include_internal}" == "1" || "${slot}" =~ ^php[0-9][0-9]$ ]]; then
+            printf '%s\n' "${slot}"
+        fi
     done | sort
     shopt -u nullglob
+}
+
+clp_detect_internal_slot_names() {
+    local slot
+
+    while IFS= read -r slot; do
+        [[ -n "${slot}" ]] || continue
+        if [[ ! "${slot}" =~ ^php[0-9][0-9]$ ]]; then
+            printf '%s\n' "${slot}"
+        fi
+    done < <(clp_detect_slot_names 1)
 }
 
 clp_detect_php_slot() {
@@ -63,6 +79,9 @@ clp_detect_php_slot() {
     CLP_DETECTED_PHP_VERSION="${php_version}"
     CLP_DETECTED_PHP_API="$(clp_php_info_value "${info}" "PHP API")"
     CLP_DETECTED_ZEND_MODULE_API="$(clp_php_info_value "${info}" "Zend Module Api No")"
+    if [[ -z "${CLP_DETECTED_ZEND_MODULE_API}" ]]; then
+        CLP_DETECTED_ZEND_MODULE_API="$(clp_php_info_value "${info}" "PHP Extension")"
+    fi
     CLP_DETECTED_ZEND_EXTENSION_BUILD="$(clp_php_info_value "${info}" "Zend Extension Build")"
     CLP_DETECTED_THREAD_SAFETY="$(clp_php_info_value "${info}" "Thread Safety")"
     CLP_DETECTED_DEBUG_BUILD="$(clp_php_info_value "${info}" "Debug Build")"
@@ -87,6 +106,7 @@ clp_print_detected_slot() {
 
 clp_cmd_detect() {
     local slot_filter=""
+    local include_internal=0
 
     while (($# > 0)); do
         case "$1" in
@@ -96,6 +116,10 @@ clp_cmd_detect() {
                 ;;
             --php=*)
                 slot_filter="${1#--php=}"
+                shift
+                ;;
+            --include-internal)
+                include_internal=1
                 shift
                 ;;
             *)
@@ -118,7 +142,7 @@ clp_cmd_detect() {
     else
         while IFS= read -r slot; do
             slots+=("${slot}")
-        done < <(clp_detect_slot_names)
+        done < <(clp_detect_slot_names "${include_internal}")
     fi
 
     if ((${#slots[@]} == 0)); then

@@ -192,6 +192,16 @@ clp_cmd_doctor() {
         done
     fi
 
+    local -a internal_slots=()
+    while IFS= read -r slot; do
+        [[ -n "${slot}" ]] && internal_slots+=("${slot}")
+    done < <(clp_detect_internal_slot_names)
+
+    if ((${#internal_slots[@]} > 0)); then
+        clp_doctor_warn "ignored non-selector/internal slot(s) by default: $(clp_join_by ', ' "${internal_slots[@]}")"
+        printf '       Use detect --include-internal only for troubleshooting, not normal Phalcon installs.\n'
+    fi
+
     clp_doctor_cloudlinux_phalcon_rpms
 
     printf 'summary: %s failure(s), %s warning(s)\n' "${CLP_DOCTOR_FAILURES}" "${CLP_DOCTOR_WARNINGS}"

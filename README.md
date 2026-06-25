@@ -260,7 +260,12 @@ cl-phalcon cagefs-rebuild
 /opt/alt/php*/usr/bin/php-config
 ```
 
-For each detected slot it resolves:
+By default, `detect` reports selector-style slots named `phpNN`, such as
+`php74` or `php85`. Internal slots such as `php-internal` or vendor-specific
+slots such as `php74-imunify` are ignored for normal output because they should
+not be used for regular PHP Selector Phalcon installs.
+
+For each detected selector slot it resolves:
 
 - PHP binary
 - `phpize`
@@ -278,6 +283,7 @@ Example:
 ```bash
 cl-phalcon detect
 cl-phalcon detect --php php85
+cl-phalcon detect --include-internal
 ```
 
 ## Install Examples
@@ -302,7 +308,13 @@ slots:
 cl-phalcon install --php php82,php83,php84 --phalcon 5.9.3 --module phalcon59 --yes
 ```
 
-Install for every detected alt-php slot:
+Avoid broad `--all-php` installs on production servers with many legacy
+CloudLinux slots. `--all-php` targets every detected selector-style `phpNN`
+slot, which can include old PHP versions that are not compatible with the
+requested Phalcon release. Prefer an explicit `--php` list.
+
+Use `--all-php` only when you have reviewed the detected slots and the selected
+Phalcon release is compatible with all of them:
 
 ```bash
 cl-phalcon install --all-php --phalcon 5.16.0 --yes
